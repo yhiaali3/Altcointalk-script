@@ -1,7 +1,7 @@
 {
   "name": "Altcointalks Script",
   "short_name": "Altcointalks-Script",
-  "version": "4.0",
+  "version": "1.0",
   "manifest_version": 3,
   "description": "Extension for Altcointalks — themes, zoom, direction, emoji toolbar and more",
   "icons": {
