@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Altcointalks Script — Controls</title>
+    <link rel="stylesheet" href="css/popup.css">
+</head>
+
+<body>
+    <div id="popup-root">
+        <div class="app">
+            <header class="app-header">
+                <img src="icons/icon32.png" alt="icon" width="36" height="36">
+                <div class="app-title">
+                    <h1>Altcointalks Script</h1>
+                    <small>Themes · Zoom · Direction</small>
+                </div>
+            </header>
+
+            <main>
+                <section class="panel-body">
+                    <label for="themeName">Theme name:</label><br>
+                    <input type="text" id="themeName" placeholder="Example: Dark Mode"><br>
+
+                    <label for="customCss">Enter your CSS rules:</label><br>
+                    <textarea id="customCss" rows="4" cols="40"
+                        placeholder="/* Example: body { background: #222; color: #eee; } */"></textarea><br>
+                    <button id="cleanTheme" class="theme-button" title="Clear the CSS code editor">🧹 Clean</button>
+                    <button id="saveTheme" class="theme-button" title="Save the current theme">💾 Save</button>
+                    <button id="editTheme" class="theme-button" title="Edit the selected theme">✏️ Edit</button>
+                    <button id="applyTheme" class="theme-button" title="Apply the selected theme">🎨 Apply</button>
+                    <button id="deleteTheme" class="theme-button" title="Delete the selected theme">🗑️ Delete</button>
+                    <button id="exportThemes" class="theme-button" title="Export all saved themes to a JSON file">📤
+                        Export</button>
+                    <input type="file" id="importThemesFile" accept=".json" style="display:none" />
+                    <button id="importThemes" class="theme-button" title="Import themes from a JSON file">📥
+                        Import</button>
+                    <h3 style="margin-bottom: 1px; margin-top: 0;">Saved Themes</h3>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <select id="themesList">
+                            <option value="" disabled selected>Choose Theme to Apply</option>
+                        </select>
+                        <span style="color:#666464; font-size:13px;">Choose Theme to Apply</span>
+                    </div>
+                </section>
+
+                <!-- Emoticon replacer removed -->
+
+                <!-- Theme / Appearance -->
+                <section class="panel" id="panel-theme">
+                    <div class="panel-head">
+                        <h2 style="font-size:18px; font-weight:800;">Theme & Display</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <label style="font-size:18px; font-weight:800;">Theme</label>
+                            <div class="btn-row" id="themeButtons">
+                                <button class="btn small" data-key="theme" data-value="on">Default</button>
+                                <button class="btn small" data-key="theme" data-value="1">Dark 1</button>
+                                <button class="btn small" data-key="theme" data-value="2">Dark 2</button>
+                                <button class="btn small" data-key="theme" data-value="3">Dark 3</button>
+                                <button class="btn small" data-key="theme" data-value="4">Bitcoin</button>
+                                <button class="btn small" data-key="theme" data-value="colorblind-safe">Colorblind
+                                    Safe</button>
+                                <button class="btn small" id="resetTheme">Reset</button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <label>Signature</label>
+                            <div class="btn-row">
+                                <button class="btn small toggle-btn" data-key="signature" data-value="on">ON</button>
+                                <button class="btn small toggle-btn" data-key="signature" data-value="off">OFF</button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <label>Avatar</label>
+                            <div class="btn-row">
+                                <button class="btn small toggle-btn" data-key="avatar" data-value="on">ON</button>
+                                <button class="btn small toggle-btn" data-key="avatar" data-value="off">OFF</button>
+                            </div>
+                        </div>
+                </section>
+
+                <!-- Other controls -->
+                <section class="panel" id="panel-others">
+                    <div class="panel-head">
+                        <h2>Other</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <label style="font-size:16px; font-weight:700;">Show Price</label>
+                            <div class="btn-row">
+                                <button class="btn small toggle-btn" data-key="price" data-value="on">ON</button>
+                                <button class="btn small toggle-btn" data-key="price" data-value="off">OFF</button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <label style="font-size:14px; font-weight:800;">Extra Coins</label>
+                            <div id="altcoinControls"
+                                style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+                                <label><input type="checkbox" class="altcoin-checkbox" data-coin-id="bitcoin">
+                                    BTC</label>
+                                <label><input type="checkbox" class="altcoin-checkbox" data-coin-id="ethereum">
+                                    ETH</label>
+                                <label><input type="checkbox" class="altcoin-checkbox" data-coin-id="binancecoin">
+                                    BNB</label>
+                                <label><input type="checkbox" class="altcoin-checkbox" data-coin-id="solana">
+                                    SOL</label>
+                                <label><input type="checkbox" class="altcoin-checkbox" data-coin-id="dogecoin">
+                                    DOGE</label>
+                                <label><input type="checkbox" class="altcoin-checkbox" data-coin-id="monero">
+                                    XMR</label>
+                                <label><input type="checkbox" class="altcoin-checkbox" data-coin-id="polkadot">
+                                    DOT</label>
+                                <label><input type="checkbox" class="altcoin-checkbox" data-coin-id="ripple">
+                                    XRP</label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <label style="font-size:14px; font-weight:800;">Pins</label>
+                            <div class="btn-row">
+                                <button class="btn small toggle-btn" data-key="pins" data-value="on">ON</button>
+                                <button class="btn small toggle-btn" data-key="pins" data-value="off">OFF</button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <label style="font-size:18px; font-weight:600;">Direction</label>
+                            <div class="btn-row">
+                                <button class="btn small toggle-btn" data-key="direction" data-value="ltr">LTR</button>
+                                <button class="btn small toggle-btn" data-key="direction" data-value="rtl">RTL</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Zoom -->
+                <section class="panel" id="panel-zoom">
+                    <div class="panel-head">
+                        <h2>Font size</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="zoom-row">
+                            <input id="zoomSlider" type="range" min="50" max="200" step="5" value="100" data-key="zoom">
+                            <div class="zoom-info"><span id="zoomValue">100%</span></div>
+                        </div>
+                        <div class="muted small">Use the slider to change page zoom (stored per extension).</div>
+                    </div>
+                </section>
+            </main>
+
+            <footer class="app-footer">
+                <hr>
+
+                developed By: <a href="https://www.altcoinstalks.com/index.php?action=profile;u=97261"
+                    target="_blank">yhiaali3</a> - Version 1.0
+                <br>
+                <a href="https://www.altcoinstalks.com/index.php?topic=337979" target="_blank">The Main post on
+                    Altcointalks</a>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="customModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <p id="modalMessage"></p>
+            <div class="modal-actions">
+                <button id="modalOk" class="theme-button">✔ OK</button>
+                <button id="modalCancel" class="theme-button">✖ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/popup-loader.js"></script>
+</body>
+
+</html>

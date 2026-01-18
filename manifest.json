@@ -1,0 +1,103 @@
+{
+  "name": "Altcointalks Script",
+  "short_name": "Altcointalks-Script",
+  "version": "4.0",
+  "manifest_version": 3,
+  "description": "Extension for Altcointalks — themes, zoom, direction, emoji toolbar and more",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Altcointalks Script",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.www.altcoinstalks.com/*",
+        "http://*.www.altcoinstalks.com/*"
+      ],
+      "js": [
+        "js/content.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://*.www.altcoinstalks.com/*",
+        "http://*.www.altcoinstalks.com/*"
+      ],
+      "css": [
+        "css/quill.snow.css"
+      ],
+      "js": [
+        "js/quill.min.js",
+        "js/quill-editor.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://*.www.altcoinstalks.com/*",
+        "http://*.www.altcoinstalks.com/*"
+      ],
+      "js": [
+        "js/emoji-toolbar.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://*.www.altcoinstalks.com/index.php?*"
+      ],
+      "js": [
+        "js/editor-image-uploader.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "host_permissions": [
+    "https://*.www.altcoinstalks.com/*",
+    "http://*.www.altcoinstalks.com/*",
+    "https://api.coingecko.com/*",
+    "https://api.binance.com/*"
+  ],
+  "background": {
+    "service_worker": "js/background.js"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "css/altcoinstalks/*.css",
+        "css/quill.snow.css",
+        "js/quill.min.js",
+        "js/quill-editor.js",
+        "js/injected-page.js",
+        "icons/*.png",
+        "images/bitcoin.png",
+        "images/emojis/*",
+        "css/popup.css"
+      ],
+      "matches": [
+        "https://*.www.altcoinstalks.com/*",
+        "http://*.www.altcoinstalks.com/*"
+      ]
+    }
+  ]
+}

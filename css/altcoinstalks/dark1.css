@@ -1,0 +1,447 @@
+/* ===========================
+  Altcoinstalks - Dark Theme (modern, balanced, eye-friendly)
+   For Stylus (domain: altcoinstalks.com)
+   =========================== */
+
+html,
+body {
+  background: #0f172a !important;
+  color: #f1f5f9 !important;
+}
+
+#main_content_section {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+
+/* --- Links --- */
+a,
+a:visited {
+  color: #60a5fa !important;
+  text-decoration: none !important;
+}
+
+a:hover,
+a:focus {
+  color: #93c5fd !important;
+  text-decoration: underline !important;
+}
+
+/* --- Core containers --- */
+#wrapper,
+#header,
+#footer,
+#footerarea,
+.windowbg,
+.roundframe,
+.tborder,
+.table_grid,
+.bordercolor,
+.information,
+.generic_list_wrapper {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+
+/* --- Alternate rows --- */
+.windowbg2 {
+  background: #1e293b !important;
+  /* You can change this to #1d2738 for a different accent */
+}
+
+/* --- Category headers and titles --- */
+.catbg,
+.catbg3,
+.titlebg,
+.titlebg2,
+.headerpadding {
+  background: #1e3a8a !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+
+/* --- Tables --- */
+table {
+  color: #f1f5f9 !important;
+}
+
+table,
+tr,
+td,
+th {
+  border-color: #334155 !important;
+}
+
+tr:hover td {
+  background: rgba(96, 165, 250, 0.08) !important;
+}
+
+/* --- Post content --- */
+.post,
+.postarea,
+.inner,
+.content,
+.msg {
+  color: #f1f5f9 !important;
+}
+
+/* --- Blockquotes & code --- */
+blockquote,
+.quote,
+pre,
+code,
+.code {
+  background: #0f172a !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #334155 !important;
+  border-radius: 4px !important;
+  padding: 0.5em 0.8em !important;
+}
+
+pre,
+code {
+  white-space: pre-wrap;
+}
+
+/* --- Fields --- */
+input,
+textarea,
+select,
+button {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #334155 !important;
+  border-radius: 4px !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #cbd5e1 !important;
+}
+
+/* --- Secondary text --- */
+small,
+.smalltext,
+.description,
+.pagelinks,
+.navigate_section {
+  color: #cbd5e1 !important;
+}
+
+/* --- Separators --- */
+hr {
+  border: 0 !important;
+  border-top: 1px solid #334155 !important;
+}
+
+/* --- Images --- */
+img {
+  opacity: 0.95;
+  max-width: 100%;
+  height: auto;
+}
+
+/* --- Top header --- */
+#header,
+#header .frame,
+#top_section,
+#upper_section {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+#siteslogan {
+  color: #cbd5e1 !important;
+}
+
+#upper_section .user,
+#upper_section .news,
+#upper_section h2 {
+  color: #f1f5f9 !important;
+}
+
+/* --- Main menu --- */
+#main_menu {
+  background: #1e3a8a !important;
+  border-top: 1px solid #334155 !important;
+  border-bottom: 1px solid #334155 !important;
+}
+
+#menu_nav>li>a {
+  background: transparent !important;
+  color: #f1f5f9 !important;
+  padding: 0.6em 1em !important;
+}
+
+#menu_nav>li>a:hover,
+#menu_nav>li>a:focus,
+#menu_nav>li>a.active {
+  background: rgba(96, 165, 250, 0.15) !important;
+  color: #93c5fd !important;
+}
+
+#menu_nav li ul {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+
+#menu_nav li ul li a {
+  color: #f1f5f9 !important;
+}
+
+#menu_nav li ul li a:hover {
+  background: rgba(96, 165, 250, 0.15) !important;
+  color: #93c5fd !important;
+}
+
+/* --- Buttons --- */
+.button_strip a,
+#moderationbuttons a,
+#topic_header a,
+.buttonlist a {
+  display: inline-block !important;
+  background: #334155 !important;
+  border: 1px solid #475569 !important;
+  border-radius: 8px !important;
+  padding: 6px 10px !important;
+  margin: 2px 4px 2px 0 !important;
+  color: #f1f5f9 !important;
+  text-decoration: none !important;
+  font-weight: bold;
+}
+
+.button_strip a:hover,
+.buttonlist a:hover,
+#moderationbuttons a:hover,
+#topic_header a:hover {
+  background: #475569 !important;
+  color: #ffffff !important;
+}
+
+.buttonlist a.active,
+.button_strip a.active {
+  background: rgba(96, 165, 250, 0.25) !important;
+  border-color: rgba(96, 165, 250, 0.4) !important;
+}
+
+/* --- Poll add button --- */
+.button_strip_add_poll,
+.button_strip_add_poll:link,
+.button_strip_add_poll:visited {
+  color: #ffffff !important;
+  background: #334155 !important;
+  border: 1px solid #3a563a !important;
+  border-radius: 6px !important;
+  padding: 6px 8px !important;
+  font-weight: bold !important;
+  display: inline-block !important;
+}
+
+.button_strip_add_poll:hover {
+  background: #2a3a2a !important;
+  color: #fff !important;
+}
+
+.button_strip_add_poll span {
+  color: #f1f5f9 !important;
+  font-size: 10px !important;
+}
+
+/* --- Other elements --- */
+.dropmenu li a.active span.firstlevel {
+  background: #1e293b !important;
+  border: 1px solid #60a5fa !important;
+  border-radius: 4px !important;
+}
+
+table.table_grid thead tr.catbg th {
+  background: #1e3a8a !important;
+}
+
+#content_section,
+#content_section div.frame {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  padding-left: 20px !important;
+}
+
+.description,
+.description_board,
+.plainbox {
+  padding: 0.5em 1em;
+  font-size: 0.9em;
+  line-height: 1.4em;
+  border: 1px solid #334155 !important;
+  background: #1e293b !important;
+  margin: 0.2em 1px 1em 1px;
+}
+
+#footer_section div.frame {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  padding: 0 60px 0 0 !important;
+}
+
+/* --- Font sizes (as requested earlier) --- */
+html.bt-theme-3 .post,
+html.bt-theme-3 .signature,
+html.bt-theme-3 .smalltext {
+  font-size: 17px !important;
+  line-height: 1.6 !important;
+}
+
+html.bt-theme-3 #bitcointalk-advanced-editor .ql-editor,
+html.bt-theme-3 textarea[name="message"] {
+  font-size: 17px !important;
+  line-height: 1.6 !important;
+}
+
+html.bt-theme-3 blockquote,
+html.bt-theme-3 .quote,
+html.bt-theme-3 [class*="quote"],
+html.bt-theme-3 .bbc_standard_quote {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+/* --- General fixes --- */
+body,
+td,
+th,
+tr {
+  color: #f1f5f9 !important;
+
+}
+
+/* Replace button-list item backgrounds with a uniform dark tone */
+.buttonlist ul li a span {
+  background: #1e293b !important;
+  background-image: none !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  display: inline-block !important;
+}
+
+div.title_barIC {
+  background: #1e3a8a !important;
+  /* same as catbg color */
+  background-image: none !important;
+  padding-left: 9px !important;
+  height: 31px !important;
+  overflow: hidden !important;
+  margin-bottom: 1px !important;
+  border-bottom: 1px solid #334155 !important;
+}
+
+/* ======== Change editor advanced writing area background and text ======== */
+
+/* Editor writing area background and text */
+div.ql-editor {
+  background-color: #0d0f12 !important;
+  color: #e0e6f0 !important;
+  border: 1px solid #3a3f4b !important;
+  padding: 12px 15px !important;
+  line-height: 1.6 !important;
+  font-size: 17px !important;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+/* If there is another class like .ql-editor-body or .ql-blank */
+.ql-editor,
+.ql-blank {
+  background-color: #0d0f12 !important;
+  color: #e0e6f0 !important;
+}
+
+/* To avoid unwanted vertical or horizontal lines */
+div.ql-editor * {
+  color: inherit !important;
+  background: transparent !important;
+}
+
+/* Improve text clarity on selection */
+div.ql-editor::selection {
+  background: rgba(125, 180, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+
+/* If there is a class for formatted text (e.g., bold/italic) */
+div.ql-editor strong,
+div.ql-editor em,
+div.ql-editor u {
+  color: #ffffff !important;
+}
+
+/* Remove unwanted shadows or borders */
+div.ql-editor {
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+/* ======== Make text black in the preview element only ======== */
+
+#preview_body,
+#preview_body *,
+.windowbg#preview_body,
+.windowbg#preview_body * {
+  color: #000 !important;
+  background-color: #e7eaf0 !important;
+}
+
+/* If there's a class like .preview-content or .msg-preview */
+.preview-content,
+.msg-preview,
+.preview-body {
+  color: #000 !important;
+  background-color: #e7eaf0 !important;
+}
+
+/* To avoid conflicts with other styles */
+#preview_body p,
+#preview_body div,
+#preview_body span,
+#preview_body li {
+  color: #000 !important;
+}
+
+/* If there are special texts (e.g., quotes inside the preview) */
+#preview_body blockquote,
+#preview_body .quote {
+  color: #000 !important;
+  border-left: 4px solid #334155 !important;
+  background: #f5f5f5 !important;
+}
+
+/* To improve text clarity on selection */
+#preview_body::selection {
+  background: #b6d4ff !important;
+  color: #000 !important;
+}
+
+/* Fix cell containing input and buttons */
+td:has(#shoutbox_message) {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+/* Input */
+#shoutbox_message {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px !important;
+  box-sizing: border-box;
+}
+
+/* Buttons */
+td:has(#shoutbox_message) button {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  margin: 0 2px;
+}

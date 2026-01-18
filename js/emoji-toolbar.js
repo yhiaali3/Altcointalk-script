@@ -1,0 +1,269 @@
+// js/emoji-toolbar.js (cleaned)
+// Updated toolbar:
+// - icons display at 16x16
+// - insert Unicode emoji (mapping) on click (no filenames)
+// - attach only to message textarea (heuristic: textarea with height/rows sufficiently large)
+// - responds to storage.altcoinstalks.emojiToolbarList and enableEmojiToolbar
+
+(function () {
+  if (window.__altcoinstalks_emoji_toolbar_installed) return;
+  window.__altcoinstalks_emoji_toolbar_installed = true;
+
+  // Map filenames -> Unicode (used for insertion)
+  const UNICODE_MAP = {
+    'evil-grin.png': '😈',
+    'smile.png': '😊',
+    'flushed.png': '😳',
+    'innocent.png': '😇',
+    'joy.png': '😂',
+    'sad.png': '😢',
+    'angry.png': '😠',
+    'love.png': '😍',
+    'surprised.png': '😲',
+    'thinking.png': '🤔',
+    'cry.png': '😭',
+    'thumbs-up.png': '👍',
+    'thumbs-down.png': '👎',
+    'wink.png': '😉',
+    'laugh.png': '😆',
+    'bored.png': '🙄',
+    'sleepy.png': '😴',
+    'party.png': '🎉',
+    'cool.png': '😎',
+    'blush.png': '🙂'
+  };
+
+  function getDefaultToolbarList() {
+    return [
+      'smile.png', 'joy.png', 'laugh.png', 'love.png', 'party.png', 'thumbs-up.png', 'thumbs-down.png',
+      'wink.png', 'evil-grin.png', 'cool.png', 'blush.png', 'bored.png', 'sleepy.png', 'innocent.png',
+      'flushed.png', 'surprised.png', 'thinking.png', 'cry.png', 'sad.png', 'angry.png'
+    ];
+  }
+
+  function buildItemsFromList(list) {
+    const arr = Array.isArray(list) && list.length ? list : getDefaultToolbarList();
+    return arr.map(fn => ({
+      filename: fn,
+      imgSrc: chrome.runtime.getURL(`images/emojis/${fn}`),
+      unicode: UNICODE_MAP[fn] || ''
+    }));
+  }
+
+  const STYLE_ID = 'altcoinstalks-emoji-toolbar-style';
+  if (!document.getElementById(STYLE_ID)) {
+    const s = document.createElement('style');
+    s.id = STYLE_ID;
+    s.textContent = `
+      .altcoinstalks-emoji-toolbar { display:flex !important; gap:6px !important; align-items:center !important; justify-content:flex-start !important; width:100% !important; margin:6px 0 !important; cursor:default !important; }
+      .altcoinstalks-emoji-btn { display:inline-flex !important; align-items:center !important; justify-content:center !important; cursor:pointer !important; border:1px solid rgba(0,0,0,0.06) !important; background:#fff !important; padding:2px !important; border-radius:4px !important; width:24px !important; height:24px !important; box-shadow:0 1px 1px rgba(0,0,0,0.04) !important; box-sizing:border-box !important; }
+      .altcoinstalks-emoji-btn img { width:16px !important; height:16px !important; max-width:16px !important; max-height:16px !important; object-fit:contain !important; display:block !important; }
+      .altcoinstalks-emoji-btn:hover { background:#f5f6f8 !important; transform: translateY(-1px) !important; }
+      .altcoinstalks-emoji-toolbar.inline-after { margin-left:6px !important; vertical-align:middle !important; display:inline-flex !important; }
+    `;
+    document.head.appendChild(s);
+  }
+
+  function isLargeTextarea(ta) {
+    if (!ta || ta.tagName !== 'TEXTAREA') return false;
+    try {
+      const rows = parseInt(ta.getAttribute('rows') || '0');
+      if (rows >= 3) return true;
+      const now = Date.now();
+      const cacheKey = '__altcoinstalks_large_cache';
+      const cacheTimeKey = '__altcoinstalks_large_cache_time';
+      const cachedTime = ta[cacheTimeKey] || 0;
+      if (ta[cacheKey] !== undefined && (now - cachedTime) < 1000) {
+        return !!ta[cacheKey];
+      }
+      const rect = ta.getBoundingClientRect();
+      const isLarge = !!(rect && rect.height && rect.height > 80);
+      try { ta[cacheKey] = isLarge; ta[cacheTimeKey] = now; } catch (e) { }
+      if (isLarge) return true;
+    } catch (e) { }
+    return false;
+  }
+
+  function createToolbar(items) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'altcoinstalks-emoji-toolbar';
+    items.forEach(item => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'altcoinstalks-emoji-btn';
+      btn.title = item.filename.replace(/\.[^.]+$/, '');
+      const img = document.createElement('img');
+      img.src = item.imgSrc;
+      img.alt = item.filename.replace(/\.[^.]+$/, '');
+      img.decoding = 'async';
+      img.addEventListener('error', () => {
+        if (btn.contains(img)) btn.removeChild(img);
+        btn.textContent = item.unicode || '⍰';
+      });
+      btn.appendChild(img);
+      btn.dataset.unicode = item.unicode || '';
+      wrapper.appendChild(btn);
+    });
+    return wrapper;
+  }
+
+  function insertIntoTextInput(el, text) {
+    try {
+      let inst = null;
+      if (window.sceditor && typeof sceditor.instance === 'function') {
+        try { inst = sceditor.instance(el); } catch (e) { inst = null; }
+      }
+      if (inst && typeof inst.insert === 'function') {
+        try { inst.insert(text); } catch (e) { /* ignore */ }
+        try { inst.updateOriginal(); } catch (e) { /* ignore */ }
+        try { inst.focus(); } catch (e) { /* ignore */ }
+        return;
+      }
+
+      el.focus();
+      const start = el.selectionStart ?? el.value.length;
+      const end = el.selectionEnd ?? start;
+      const v = el.value || '';
+      const newValue = v.slice(0, start) + text + v.slice(end);
+      el.value = newValue;
+      const pos = start + text.length;
+      el.setSelectionRange(pos, pos);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    } catch (err) {
+      console.warn('altcoinstalks-emoji: insertIntoTextInput failed', err);
+    }
+  }
+
+  function attachToolbarTo(target, items) {
+    if (!target || target.__altcoinstalks_has_toolbar) return;
+
+    let attachElement = target;
+    if (window.sceditor && typeof sceditor.instance === 'function') {
+      try {
+        const inst = sceditor.instance(target);
+        if (inst && typeof inst.getContentAreaContainer === 'function') {
+          const container = inst.getContentAreaContainer();
+          if (container) attachElement = container;
+        }
+      } catch (e) {
+        /* ignore - fall back to textarea */
+      }
+    }
+
+    try {
+      if (attachElement === target && !isLargeTextarea(target)) return;
+    } catch (e) { /* ignore */ }
+
+    target.__altcoinstalks_has_toolbar = true;
+    const toolbar = createToolbar(items);
+    toolbar.classList.remove('inline-after');
+
+    try {
+      attachElement.insertAdjacentElement('beforebegin', toolbar);
+    } catch (err) {
+      const parent = attachElement.parentNode;
+      if (parent) parent.insertBefore(toolbar, attachElement);
+      else document.body.appendChild(toolbar);
+    }
+
+    try {
+      if (window.sceditor && typeof sceditor.instance === 'function') {
+        try {
+          const inst = sceditor.instance(target);
+          if (inst) toolbar._altcoinstalks_inst = inst;
+        } catch (e) { /* ignore */ }
+      }
+    } catch (e) { /* ignore */ }
+
+    toolbar.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('.altcoinstalks-emoji-btn');
+      if (!btn) return;
+      const unicode = btn.dataset.unicode || '';
+      if (!unicode) return;
+
+      // Prefer cached instance, otherwise try to get one dynamically
+      let inst = toolbar._altcoinstalks_inst || null;
+      if (!inst && window.sceditor && typeof sceditor.instance === 'function') {
+        try { inst = sceditor.instance(target); } catch (e) { inst = null; }
+      }
+
+      if (inst && typeof inst.insert === 'function') {
+        try { inst.insert(unicode); } catch (e) { /* ignore */ }
+        try { inst.updateOriginal(); } catch (e) { /* ignore */ }
+        try { inst.focus(); } catch (e) { /* ignore */ }
+        return;
+      }
+
+      // Fallback
+      insertIntoTextInput(target, unicode);
+    });
+  }
+
+  function removeAllToolbars() {
+    document.querySelectorAll('.altcoinstalks-emoji-toolbar').forEach(el => el.remove());
+    document.querySelectorAll('textarea').forEach(n => {
+      try { n.__altcoinstalks_has_toolbar = false; } catch (e) { }
+    });
+  }
+
+  function scanAndAttach(items, root = document) {
+    const nodes = root.querySelectorAll('textarea');
+    nodes.forEach(n => attachToolbarTo(n, items));
+  }
+
+  // Read settings and init
+  function initFromStorage() {
+    chrome.storage.local.get('altcoinstalks', (res) => {
+      const s = res && res.altcoinstalks ? res.altcoinstalks : {};
+      const enabled = s.enableEmojiToolbar !== false;
+      // If no emojiToolbarList is stored, persist the default list for stability
+      const shouldPersistDefault = !Array.isArray(s.emojiToolbarList) || !s.emojiToolbarList.length;
+      const list = shouldPersistDefault ? getDefaultToolbarList() : s.emojiToolbarList;
+      if (shouldPersistDefault) {
+        try { s.emojiToolbarList = list; chrome.storage.local.set({ altcoinstalks: s }); } catch (e) { /* ignore */ }
+      }
+      const items = buildItemsFromList(list);
+      removeAllToolbars();
+      if (enabled) {
+        scanAndAttach(items);
+        if (!window.__altcoinstalks_toolbar_mu) {
+          // Debounced scanner to avoid heavy work on rapid DOM mutations (reduces reflow/scroll jank)
+          let scanTimer = null;
+          const scheduleScan = (rootNode) => {
+            if (scanTimer) clearTimeout(scanTimer);
+            scanTimer = setTimeout(() => { scanAndAttach(items, rootNode || document); scanTimer = null; }, 120);
+          };
+          const mo = new MutationObserver(muts => {
+            // if many mutations happen, schedule a single scan after quiet period
+            for (const m of muts) {
+              if (m.type === 'childList' && m.addedNodes.length) {
+                scheduleScan(m.target || document);
+                return;
+              }
+            }
+          });
+          mo.observe(document.documentElement || document.body, { childList: true, subtree: true });
+          window.__altcoinstalks_toolbar_mu = mo;
+        }
+      } else {
+        if (window.__altcoinstalks_toolbar_mu) {
+          try { window.__altcoinstalks_toolbar_mu.disconnect(); } catch (e) { }
+          window.__altcoinstalks_toolbar_mu = null;
+        }
+      }
+    });
+  }
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.altcoinstalks) initFromStorage();
+  });
+
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg && (msg.type === 'emoji-toolbar-update' || (msg.type && msg.type.indexOf('enableEmojiToolbar') !== -1))) {
+      initFromStorage();
+    }
+  });
+
+  // initial
+  initFromStorage();
+})();

@@ -1,0 +1,440 @@
+/* ===========================
+    Altcoinstalks - Dark2 Theme (with optional font size increase)
+   For Stylus (domain: altcoinstalks.com)
+   =========================== */
+
+html,
+body {
+    background: linear-gradient(140deg, #0a1225 0%, #0d172c 100%) !important;
+    color: #f1f5f9 !important;
+    font-size: 16px !important;
+    /* Base styles */
+}
+
+#main_content_section {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+    border-radius: 8px !important;
+}
+
+/* --- Links --- */
+a,
+a:visited {
+    color: #60a5fa !important;
+    text-decoration: none !important;
+    transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+a:hover,
+a:focus {
+    color: #93c5fd !important;
+    text-decoration: underline !important;
+    text-decoration-color: rgba(96, 165, 250, 0.6) !important;
+    text-underline-offset: 2px !important;
+    text-decoration-thickness: 1.5px !important;
+}
+
+/* --- Core containers --- */
+#wrapper,
+#header,
+#footer,
+#footerarea,
+.windowbg,
+.roundframe,
+.tborder,
+.table_grid,
+.bordercolor,
+.information,
+.generic_list_wrapper {
+    background: #1e293b !important;
+    color: #f1f5f9 !important;
+    border-color: #334155 !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) !important;
+    border-radius: 6px !important;
+}
+
+/* --- Alternate rows --- */
+.windowbg2 {
+    background: #1d2738 !important;
+}
+
+/* --- Headings (increase +2px) --- */
+.catbg,
+.catbg3,
+.titlebg,
+.titlebg2,
+.headerpadding,
+#menu_nav>li>a,
+#menu_nav li ul li a,
+h1,
+h2,
+h3,
+h4,
+.board_name,
+.subject {
+    font-size: 16px !important;
+    /* Default was ~14px → now 16px */
+}
+
+/* --- Tables --- */
+table {
+    color: #f1f5f9 !important;
+}
+
+table,
+tr,
+td,
+th {
+    border-color: #334155 !important;
+}
+
+tr:hover td {
+    background: rgba(96, 165, 250, 0.08) !important;
+}
+
+/* --- General text (+4px → 21px) --- */
+.post,
+.postarea,
+.inner,
+.content,
+.msg,
+.description,
+.description_board,
+.plainbox,
+.smalltext,
+.navigate_section,
+.pagelinks,
+#upper_section .user,
+#upper_section .news {
+    color: #f1f5f9 !important;
+    font-size: 21px !important;
+    line-height: 1.6 !important;
+}
+
+/* --- Quotes & code (+2px → 16px) --- */
+blockquote,
+.quote,
+pre,
+code,
+.code,
+html.bt-theme-3 blockquote,
+html.bt-theme-3 .quote,
+html.bt-theme-3 [class*="quote"],
+html.bt-theme-3 .bbc_standard_quote {
+    background: #0f172a !important;
+    color: #f1f5f9 !important;
+    border: 1px solid #334155 !important;
+    border-radius: 6px !important;
+    padding: 0.6em 1em !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+    font-size: 16px !important;
+    /* was 14px */
+    line-height: 1.5 !important;
+}
+
+pre,
+code {
+    white-space: pre-wrap;
+}
+
+/* --- Edit box (+4px → 21px) --- */
+html.bt-theme-3 #bitcointalk-advanced-editor .ql-editor,
+html.bt-theme-3 textarea[name="message"],
+textarea,
+input[type="text"],
+input[type="email"],
+select {
+    font-size: 21px !important;
+    line-height: 1.6 !important;
+    background: #1e293b !important;
+    color: #f1f5f9 !important;
+    border: 1px solid #334155 !important;
+    border-radius: 6px !important;
+    padding: 0.5em 0.8em !important;
+}
+
+/* --- Fields (placeholders) --- */
+input::placeholder,
+textarea::placeholder {
+    color: #cbd5e1 !important;
+    font-size: 21px !important;
+}
+
+/* --- Secondary text (e.g., dates, stats) --- */
+small,
+.smalltext:not(.post):not(.content) {
+    font-size: 18px !important;
+    /* Mid value between normal and small */
+    color: #cbd5e1 !important;
+}
+
+/* --- Separators --- */
+hr {
+    border: 0 !important;
+    border-top: 1px solid #334155 !important;
+}
+
+/* --- Images --- */
+img {
+    opacity: 0.95;
+    max-width: 100%;
+    height: auto;
+}
+
+/* --- Top header --- */
+#header,
+#header .frame,
+#top_section,
+#upper_section {
+    background: #1e293b !important;
+    color: #f1f5f9 !important;
+    border-color: #334155 !important;
+    background-image: none !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+#siteslogan {
+    color: #cbd5e1 !important;
+    font-size: 16px !important;
+}
+
+#upper_section h2 {
+    font-size: 16px !important;
+}
+
+/* --- Main menu (items +2px) --- */
+#main_menu {
+    background: #1e3a8a !important;
+    border-top: 1px solid #334155 !important;
+    border-bottom: 1px solid #334155 !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) !important;
+}
+
+#menu_nav>li>a {
+    background: transparent !important;
+    color: #f1f5f9 !important;
+    padding: 0.6em 1em !important;
+    border-radius: 4px !important;
+    font-size: 16px !important;
+    /* +2px */
+}
+
+#menu_nav>li>a:hover,
+#menu_nav>li>a:focus,
+#menu_nav>li>a.active {
+    background: rgba(96, 165, 250, 0.15) !important;
+    color: #93c5fd !important;
+}
+
+#menu_nav li ul {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+    font-size: 16px !important;
+}
+
+#menu_nav li ul li a {
+    color: #f1f5f9 !important;
+}
+
+#menu_nav li ul li a:hover {
+    background: rgba(96, 165, 250, 0.15) !important;
+    color: #93c5fd !important;
+}
+
+/* --- Buttons (+2px font size) --- */
+.button_strip a,
+#moderationbuttons a,
+#topic_header a,
+.buttonlist a {
+    display: inline-block !important;
+    background: #334155 !important;
+    border: 1px solid #475569 !important;
+    border-radius: 8px !important;
+    padding: 8px 14px !important;
+    /* Increased padding slightly to accommodate larger font */
+    margin: 2px 4px 2px 0 !important;
+    color: #f1f5f9 !important;
+    text-decoration: none !important;
+    font-weight: bold !important;
+    font-size: 16px !important;
+    /* +2px */
+    transition: all 0.25s ease !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.button_strip a:hover,
+.buttonlist a:hover,
+#moderationbuttons a:hover,
+#topic_header a:hover {
+    background: #475569 !important;
+    color: #ffffff !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+    border-color: #60a5fa !important;
+}
+
+.buttonlist a.active,
+.button_strip a.active {
+    background: rgba(96, 165, 250, 0.25) !important;
+    border-color: rgba(96, 165, 250, 0.5) !important;
+    box-shadow: 0 3px 6px rgba(96, 165, 250, 0.2) !important;
+}
+
+/* --- Poll add button --- */
+.button_strip_add_poll,
+.button_strip_add_poll:link,
+.button_strip_add_poll:visited {
+    color: #ffffff !important;
+    background: #334155 !important;
+    border: 1px solid #3a563a !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    font-weight: bold !important;
+    display: inline-block !important;
+    font-size: 16px !important;
+    /* +2px */
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.button_strip_add_poll:hover {
+    background: #2a3a2a !important;
+    color: #fff !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25) !important;
+}
+
+.button_strip_add_poll span {
+    color: #f1f5f9 !important;
+    font-size: 12px !important;
+    /* +2px from 10px */
+}
+
+/* --- Fix menu item backgrounds --- */
+.buttonlist ul li a span {
+    background: #1e293b !important;
+    background-image: none !important;
+    padding: 6px 10px !important;
+    border-radius: 4px !important;
+    display: inline-block !important;
+    font-size: 16px !important;
+    /* +2px */
+}
+
+.buttonlist ul li a span:hover {
+    background: #334155 !important;
+}
+
+/* --- Other elements --- */
+.dropmenu li a.active span.firstlevel {
+    background: #1e293b !important;
+    border: 1px solid #60a5fa !important;
+    border-radius: 4px !important;
+    font-size: 16px !important;
+}
+
+table.table_grid thead tr.catbg th {
+    background: #1e3a8a !important;
+    font-size: 16px !important;
+}
+
+#content_section,
+#content_section div.frame {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    padding-left: 20px !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) !important;
+    border-radius: 8px !important;
+}
+
+.description,
+.description_board,
+.plainbox {
+    padding: 0.6em 1.2em !important;
+    font-size: 21px !important;
+    /* +4px */
+    line-height: 1.6 !important;
+    border: 1px solid #334155 !important;
+    background: #1e293b !important;
+    margin: 0.2em 1px 1em 1px;
+    border-radius: 6px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+#footer_section div.frame {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    padding: 0 60px 0 0 !important;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* --- General fixes --- */
+body,
+td,
+th,
+tr {
+    color: #f1f5f9 !important;
+}
+
+div.title_barIC {
+    background: #1e3a8a !important;
+    /* same as catbg color */
+    background-image: none !important;
+    padding-left: 9px !important;
+    height: 31px !important;
+    overflow: hidden !important;
+    margin-bottom: 1px !important;
+    border-bottom: 1px solid #334155 !important;
+}
+
+/* ======== Change editor advanced writing area background and text ======== */
+
+/* Editor writing area background and text */
+div.ql-editor {
+    background-color: #0d0f12 !important;
+    color: #e0e6f0 !important;
+    border: 1px solid #3a3f4b !important;
+    padding: 12px 15px !important;
+    line-height: 1.6 !important;
+    font-size: 17px !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+/* If there is another class like .ql-editor-body or .ql-blank */
+.ql-editor,
+.ql-blank {
+    background-color: #0d0f12 !important;
+    color: #e0e6f0 !important;
+}
+
+/* To avoid unwanted vertical or horizontal lines */
+div.ql-editor * {
+    color: inherit !important;
+    background: transparent !important;
+}
+
+/* Fix cell containing input and buttons */
+td:has(#shoutbox_message) {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+}
+
+/* Input */
+#shoutbox_message {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 12px !important;
+    box-sizing: border-box;
+}
+
+/* Buttons */
+td:has(#shoutbox_message) button {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    margin: 0 2px;
+}
