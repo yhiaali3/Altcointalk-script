@@ -1,7 +1,7 @@
 {
   "name": "Altcointalks Script",
   "short_name": "Altcointalks-Script",
-  "version": "1.0",
+  "version": "4.0",
   "manifest_version": 3,
   "description": "Extension for Altcointalks — themes, zoom, direction, emoji toolbar and more",
   "icons": {
@@ -23,8 +23,8 @@
   "content_scripts": [
     {
       "matches": [
-        "https://*.www.altcoinstalks.com/*",
-        "http://*.www.altcoinstalks.com/*"
+        "*://*.altcoinstalks.com/*",
+        "*://altcoinstalks.com/*"
       ],
       "js": [
         "js/content.js"
@@ -34,8 +34,8 @@
     },
     {
       "matches": [
-        "https://*.www.altcoinstalks.com/*",
-        "http://*.www.altcoinstalks.com/*"
+        "*://*.altcoinstalks.com/*",
+        "*://altcoinstalks.com/*"
       ],
       "css": [
         "css/quill.snow.css"
@@ -49,8 +49,8 @@
     },
     {
       "matches": [
-        "https://*.www.altcoinstalks.com/*",
-        "http://*.www.altcoinstalks.com/*"
+        "*://*.altcoinstalks.com/*",
+        "*://altcoinstalks.com/*"
       ],
       "js": [
         "js/emoji-toolbar.js"
@@ -60,7 +60,8 @@
     },
     {
       "matches": [
-        "https://*.www.altcoinstalks.com/index.php?*"
+        "*://*.altcoinstalks.com/index.php?*",
+        "*://altcoinstalks.com/index.php?*"
       ],
       "js": [
         "js/editor-image-uploader.js"
@@ -70,8 +71,8 @@
     }
   ],
   "host_permissions": [
-    "https://*.www.altcoinstalks.com/*",
-    "http://*.www.altcoinstalks.com/*",
+    "*://*.altcoinstalks.com/*",
+    "*://altcoinstalks.com/*",
     "https://api.coingecko.com/*",
     "https://api.binance.com/*"
   ],
@@ -88,6 +89,7 @@
         "css/quill.snow.css",
         "js/quill.min.js",
         "js/quill-editor.js",
+        "js/page-inject.js",
         "js/injected-page.js",
         "icons/*.png",
         "images/bitcoin.png",
@@ -95,8 +97,8 @@
         "css/popup.css"
       ],
       "matches": [
-        "https://*.www.altcoinstalks.com/*",
-        "http://*.www.altcoinstalks.com/*"
+        "*://*.altcoinstalks.com/*",
+        "*://altcoinstalks.com/*"
       ]
     }
   ]

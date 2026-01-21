@@ -127,7 +127,7 @@
 <div id="quill-resizer" title="Resize editor" aria-hidden="true"></div>
 <div class="editor-status-bar">
 <span id="quill-word-count">Words: 0</span>
-<span id="quill-sync-msg">Synced with Bitcointalk Form</span>
+<span id="quill-sync-msg">Synced with Altcointalks Forum</span>
 </div>
 `;
     // All emojis were injected as buttons
@@ -521,7 +521,7 @@
           if (!document.getElementById('bt-editor-active-style')) {
             var s = document.createElement('style');
             s.id = 'bt-editor-active-style';
-            s.textContent = '.bt-editor-active .bt-emoji-toolbar{display:none !important;}';
+            s.textContent = '.bt-editor-active .bt-emoji-toolbar, .bt-editor-active .altcoinstalks-emoji-toolbar{display:none !important;}';
             document.head.appendChild(s);
           }
           document.documentElement.classList.add('bt-editor-active');
@@ -554,7 +554,10 @@
         Quill.register(FontStyle, true);
       } catch (e) { }
       const quill = new Quill('#bitcointalk-advanced-editor', {
-        modules: { toolbar: '#advanced-toolbar' },
+        modules: {
+          toolbar: '#advanced-toolbar',
+          history: { delay: 1000, maxStack: 200, userOnly: false }
+        },
         theme: 'snow'
       });
       // Paste as plain text only (strip formatting)
@@ -569,6 +572,43 @@
             return delta;
           });
         }
+      } catch (e) { }
+      // Persist user's selected font size and restore it across reloads
+      try {
+        var sizeSelectEl = document.querySelector('.ql-size');
+        try {
+          var stored = null;
+          try { stored = localStorage.getItem('bt_quill_default_size'); } catch (e) { stored = null; }
+          if (stored && sizeSelectEl) {
+            // restore select UI if option exists
+            for (var ii = 0; ii < sizeSelectEl.options.length; ii++) {
+              if ((sizeSelectEl.options[ii].value || '') === stored) { sizeSelectEl.selectedIndex = ii; break; }
+            }
+            try { quill.formatText(0, Math.max(0, quill.getLength()), 'size', stored, 'user'); } catch (e) { }
+          }
+
+          if (sizeSelectEl) {
+            sizeSelectEl.addEventListener('change', function () {
+              try {
+                var v = (sizeSelectEl.value || '').trim();
+                try { localStorage.setItem('bt_quill_default_size', v); } catch (e) { }
+                var sel = quill.getSelection();
+                if (sel && sel.length > 0) {
+                  quill.formatText(sel.index, sel.length, 'size', v, 'user');
+                } else {
+                  quill.format('size', v);
+                }
+              } catch (e) { }
+            });
+          }
+        } catch (e) { }
+      } catch (e) { }
+
+      // Ensure paste operations create a separate history checkpoint so undo (Ctrl+Z) works immediately
+      try {
+        quill.root.addEventListener('paste', function () {
+          try { setTimeout(function () { try { quill.history && quill.history.cutoff && quill.history.cutoff(); } catch (e) { } }, 10); } catch (e) { }
+        }, false);
       } catch (e) { }
       // Prevent Chrome (and other translators) from translating the editor contents
       try {

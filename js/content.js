@@ -36,6 +36,71 @@ function fetchWithTimeout(resource, options = {}, timeout = 10000) {
         (document.documentElement || document.head || document.body).appendChild(s);
     } catch (e) { /* ignore injection failures */ }
 })();
+// Inject page interceptor for capturing "Insert Quote" clicks (Altcointalk)
+(function injectAltPageInterceptor() {
+    try {
+        const scriptUrl = chrome.runtime.getURL('js/page-inject.js');
+        const s = document.createElement('script');
+        s.src = scriptUrl;
+        s.type = 'text/javascript';
+        s.async = false;
+        s.onload = function () { try { this.remove(); } catch (e) { } };
+        (document.documentElement || document.head || document.body).appendChild(s);
+    } catch (e) { /* ignore injection failures */ }
+})();
+
+// Listen for intercepted quotes dispatched from the page script and insert into Quill
+(function listenAltQuoteEvents() {
+    try {
+        if (!window.__alt_pending_quotes) window.__alt_pending_quotes = [];
+
+        window.addEventListener('alt-quote-text', function (ev) {
+            try {
+                var text = ev && ev.detail && ev.detail.text ? ev.detail.text : '';
+                if (!text) return;
+                // If Quill instance available, insert immediately
+                try {
+                    var q = window.__bt_quill_instance;
+                    if (q) {
+                        var range = q.getSelection() || { index: q.getLength() };
+                        q.insertText(range.index, text, 'user');
+                        q.setSelection(range.index + (text ? text.length : 0), 0);
+                        q.focus();
+                        return;
+                    }
+                } catch (e) { }
+                // otherwise queue for later
+                window.__alt_pending_quotes.push(text);
+            } catch (e) { }
+        }, false);
+
+        // Flush pending quotes when Quill becomes available
+        (function flushPendingLoop() {
+            var attempts = 0;
+            var maxAttempts = 120; // ~30s
+            var iv = setInterval(function () {
+                try {
+                    attempts++;
+                    if (window.__bt_quill_instance && window.__alt_pending_quotes && window.__alt_pending_quotes.length) {
+                        var q = window.__bt_quill_instance;
+                        while (window.__alt_pending_quotes.length) {
+                            var txt = window.__alt_pending_quotes.shift();
+                            try {
+                                var range = q.getSelection() || { index: q.getLength() };
+                                q.insertText(range.index, txt, 'user');
+                                q.setSelection(range.index + (txt ? txt.length : 0), 0);
+                            } catch (e) { }
+                        }
+                        q.focus();
+                        clearInterval(iv);
+                        return;
+                    }
+                    if (attempts > maxAttempts) { clearInterval(iv); }
+                } catch (e) { clearInterval(iv); }
+            }, 250);
+        })();
+    } catch (e) { }
+})();
 // Migrate existing storage from old key 'bitcointalk' to new 'altcoinstalks' if needed
 (function storageMigration() {
     try {
@@ -1191,11 +1256,11 @@ const Altcointalks = {
                 } catch (e) { resolve(['bitcoin', 'ethereum']); }
             });
 
+            // ensure BTC and ETH are present on top line
+            const topIds = ['bitcoin', 'ethereum'];
+            const fetchIds = Array.from(new Set(topIds.concat(selected)));
             const response = await fetchPrices(fetchIds);
             if (response && response.success) {
-                // ensure BTC and ETH are present on top line
-                const topIds = ['bitcoin', 'ethereum'];
-                const fetchIds = Array.from(new Set(topIds.concat(selected)));
                 // response may include only requested ids; prefer values from response then cached prices
                 const getVal = (id) => {
                     if (response.prices && response.prices[id] !== undefined) return response.prices[id];
@@ -1450,49 +1515,176 @@ const Altcointalks = {
             }
 
             function fallbackCopy(text) {
-                const ta = document.createElement('textarea');
-                ta.value = text;
-                ta.style.position = 'fixed'; ta.style.left = '-9999px';
-                document.body.appendChild(ta); ta.select();
-                try { return document.execCommand('copy'); } catch (e) { return false; } finally { try { ta.remove(); } catch (e) { } }
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    // make tiny and off-screen but focusable
+                    ta.style.position = 'fixed'; ta.style.left = '-9999px'; ta.style.width = '1px'; ta.style.height = '1px'; ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.focus();
+                    ta.select();
+                    const ok = document.execCommand && document.execCommand('copy');
+                    try { ta.remove(); } catch (e) { }
+                    return !!ok;
+                } catch (e) {
+                    try { console.warn('fallbackCopy error', e); } catch (ee) { }
+                    return false;
+                }
             }
 
             async function writeClipboard(text) {
+                // Try fast clipboard API first (requires secure context and user gesture)
                 if (navigator.clipboard && navigator.clipboard.writeText) {
-                    try { await navigator.clipboard.writeText(text); return true; } catch (e) { }
+                    try {
+                        await navigator.clipboard.writeText(text);
+                        return true;
+                    } catch (e) {
+                        try { console.warn('navigator.clipboard.writeText failed', e); } catch (ee) { }
+                    }
                 }
+
+                // As a last resort, attempt the legacy execCommand method with focus
                 return fallbackCopy(text);
             }
 
             function processQuote(postDiv, selectedText) {
                 try {
-                    const contentTd = postDiv.closest('td.td_headerandpost');
-                    if (!contentTd) throw new Error('Could not find post');
+                    // Try to locate the td containing the post content (Bitcointalk-style layout)
+                    let contentTd = postDiv.closest('td.td_headerandpost') || postDiv.closest('td.windowbg') || postDiv.closest('td');
 
+                    // Prepare common variables early so header parsing can set them
                     let authorName = 'Unknown';
-                    const authorTd = contentTd.previousElementSibling;
-                    if (authorTd && authorTd.classList && authorTd.classList.contains('poster_info')) {
-                        const aElement = authorTd.querySelector('b > a');
-                        if (aElement) authorName = aElement.textContent.trim();
-                    }
-
                     let permalink = '';
-                    const subjectDiv = contentTd.querySelector('div.subject');
-                    if (subjectDiv) {
-                        const linkElem = subjectDiv.querySelector('a'); if (linkElem) permalink = linkElem.href;
-                    }
-                    if (!permalink) {
-                        const anchorLink = contentTd.querySelector('a[href*="#msg"]'); if (anchorLink) permalink = anchorLink.href;
-                    }
-                    if (permalink) {
-                        const parts = permalink.split('#'); let cleanBase = parts[0].split(';')[0]; if (parts[1]) permalink = cleanBase + '#' + parts[1];
-                    }
-
                     let rawDate = '';
-                    if (subjectDiv && subjectDiv.parentElement) {
-                        const smallTextDiv = subjectDiv.parentElement.querySelector('.smalltext'); if (smallTextDiv) rawDate = smallTextDiv.textContent.trim();
-                    }
-                    if (rawDate.startsWith('Today')) rawDate = rawDate.replace('Today', getFormattedDateString()).replace(' at ', ', ');
+
+                    // If selection is inside an existing quoted header (preview/inserted quote),
+                    // prefer parsing that header since it already contains author + date text.
+                    try {
+                        let walker = postDiv;
+                        let foundQuoteAnchor = null;
+                        while (walker) {
+                            try {
+                                if (walker.querySelector) {
+                                    foundQuoteAnchor = walker.querySelector('div.quoteheader a') || walker.querySelector('div.topslice_quote a') || walker.querySelector('a.bbc_link') || walker.querySelector('a[href*="#msg"]');
+                                }
+                            } catch (e) { foundQuoteAnchor = null; }
+                            if (foundQuoteAnchor) break;
+                            walker = walker.parentElement;
+                        }
+                        if (foundQuoteAnchor) {
+                            // Try text inside the anchor first
+                            try {
+                                const txt = (foundQuoteAnchor.textContent || '').trim();
+                                let m = txt.match(/Quote\s*from\s*:?\s*(.*?)\s+on\s+([\s\S]+)/i);
+                                if (m && m[1] && !/Unknown/i.test(m[1])) authorName = m[1].trim();
+                                if (m && m[2] && !/Unknown Date/i.test(m[2])) rawDate = m[2].trim();
+                            } catch (e) { }
+
+                            // If anchor text is unhelpful (e.g. "Unknown on Unknown Date"), scan parent/ancestors
+                            if ((!authorName || /Unknown/i.test(authorName)) || (!rawDate || /Unknown Date/i.test(rawDate))) {
+                                try {
+                                    let p = foundQuoteAnchor.parentElement;
+                                    let scanned = '';
+                                    // gather text from parent and a few ancestor levels to find the header string
+                                    for (let i = 0; i < 4 && p; i++, p = p.parentElement) {
+                                        if (p && p.textContent) scanned = (p.textContent || '') + '\n' + scanned;
+                                    }
+                                    if (scanned) {
+                                        const mm = scanned.match(/Quote\s*from\s*:?\s*(.*?)\s+on\s+([\s\S]+)/i);
+                                        if (mm && mm[1] && !/Unknown/i.test(mm[1])) authorName = mm[1].trim();
+                                        if (mm && mm[2] && !/Unknown Date/i.test(mm[2])) rawDate = mm[2].trim();
+                                    }
+                                } catch (e) { }
+                            }
+
+                            try { if (!permalink && foundQuoteAnchor.href) permalink = foundQuoteAnchor.href; } catch (e) { }
+                        }
+                    } catch (e) { }
+                    try {
+                        // Primary: previous sibling td (poster info)
+                        if (contentTd && contentTd.previousElementSibling) {
+                            const authorTd = contentTd.previousElementSibling;
+                            const aElem = authorTd.querySelector('b > a') || authorTd.querySelector('a');
+                            if (aElem && aElem.textContent) authorName = aElem.textContent.trim();
+                        }
+                        // Fallbacks: search nearby within the postDiv or row
+                        if (authorName === 'Unknown') {
+                            const tr = contentTd ? contentTd.closest('tr') : postDiv.closest('tr');
+                            if (tr) {
+                                const tryEl = tr.querySelector('td.poster_info b > a, td.poster_info a, .poster_info b > a, .username a, .poster a');
+                                if (tryEl && tryEl.textContent) authorName = tryEl.textContent.trim();
+                            }
+                        }
+                        // Last resort: any bold link inside ancestors
+                        if (authorName === 'Unknown') {
+                            const anyA = postDiv.querySelector('b > a') || postDiv.querySelector('a[rel="author"]') || postDiv.querySelector('a');
+                            if (anyA && anyA.textContent) authorName = anyA.textContent.trim();
+                        }
+                        // Additional fallback: search the document for common poster-info patterns near the post id
+                        if (authorName === 'Unknown') {
+                            try {
+                                const id = postDiv && postDiv.id ? postDiv.id : null;
+                                if (id) {
+                                    const byId = document.querySelector(`#${id}`);
+                                    if (byId) {
+                                        // look for preceding header row in same container
+                                        const maybeRow = byId.closest('tr') || byId.closest('div.windowbg') || byId.closest('div.content');
+                                        if (maybeRow) {
+                                            const found = maybeRow.querySelector('td.poster_info a, .poster_info a, .username a, .poster a, a[rel="author"]');
+                                            if (found && found.textContent) authorName = found.textContent.trim();
+                                        }
+                                    }
+                                }
+                            } catch (e) { }
+                        }
+                    } catch (e) { /* ignore author lookup errors */ }
+
+                    // Permalink / subject
+                    try {
+                        const subjectDiv = contentTd ? contentTd.querySelector('div.subject') : (postDiv.querySelector('div.subject') || null);
+                        if (subjectDiv) {
+                            const linkElem = subjectDiv.querySelector('a'); if (linkElem) permalink = linkElem.href;
+                        }
+                        if (!permalink && contentTd) {
+                            const anchorLink = contentTd.querySelector('a[href*="#msg"]'); if (anchorLink) permalink = anchorLink.href;
+                        }
+                        if (!permalink) {
+                            const anyAnchor = postDiv.querySelector('a[href*="#msg"]') || document.querySelector('a[href*="#msg"]');
+                            if (anyAnchor) permalink = anyAnchor.href;
+                        }
+                        if (permalink) {
+                            const parts = permalink.split('#'); let cleanBase = parts[0].split(';')[0]; if (parts[1]) permalink = cleanBase + '#' + parts[1];
+                        }
+                    } catch (e) { }
+
+                    // Date: try smalltext near subject, then any '.smalltext', then fallback to time element
+                    try {
+                        const subjectDiv = contentTd ? contentTd.querySelector('div.subject') : (postDiv.querySelector('div.subject') || null);
+                        if (subjectDiv && subjectDiv.parentElement) {
+                            const smallTextDiv = subjectDiv.parentElement.querySelector('.smalltext'); if (smallTextDiv) rawDate = smallTextDiv.textContent.trim();
+                        }
+                        if (!rawDate) {
+                            const st = postDiv.querySelector('.smalltext') || postDiv.querySelector('time');
+                            if (st) rawDate = (st.textContent || st.getAttribute('datetime') || '').trim();
+                        }
+                        // extra: scan nearby container for date-like text (month names / year)
+                        if (!rawDate) {
+                            try {
+                                const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December',
+                                    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Sept', 'Oct', 'Nov', 'Dec'];
+                                const container = contentTd || postDiv;
+                                const textCandidates = container ? Array.from(container.querySelectorAll('*')).map(n => n.textContent || '') : [];
+                                for (let t of textCandidates) {
+                                    if (!t) continue;
+                                    for (let m of months) {
+                                        if (t.indexOf(m) !== -1 && /\d{4}/.test(t)) { rawDate = t.trim(); break; }
+                                    }
+                                    if (rawDate) break;
+                                }
+                            } catch (e) { }
+                        }
+                    } catch (e) { }
+                    try { if (rawDate && rawDate.indexOf('Today') === 0) rawDate = rawDate.replace('Today', getFormattedDateString()).replace(' at ', ', '); } catch (e) { }
 
                     const fragment = generateTextFragment(selectedText);
                     const dateStr = rawDate || 'Unknown Date';
@@ -1508,11 +1700,15 @@ const Altcointalks = {
                             btn.textContent = 'Copied!'; btn.style.backgroundColor = '#dff0d8'; btn.style.color = '#3c763d';
                             setTimeout(() => { btn.textContent = originalText; btn.style.backgroundColor = '#e7eaef'; btn.style.color = '#000'; hideButton(); }, 1000);
                         } else {
+                            console.warn('processQuote: copy failed for bbcode', bbcode.slice(0, 120));
                             btn.textContent = 'Error'; btn.style.backgroundColor = '#f2dede'; setTimeout(hideButton, 1000);
                         }
+                    }).catch(e => {
+                        console.error('processQuote: writeClipboard threw', e);
+                        btn.textContent = 'Error'; btn.style.backgroundColor = '#f2dede'; setTimeout(hideButton, 1000);
                     });
                 } catch (err) {
-                    console.error('Quote Error:', err);
+                    console.error('Quote Error:', err, { selectedText: selectedText, postDiv: postDiv });
                     btn.textContent = 'Error'; btn.style.backgroundColor = '#f2dede'; setTimeout(hideButton, 1000);
                 }
             }
@@ -1705,6 +1901,15 @@ chrome.storage.onChanged.addListener((changes, area) => {
                         } catch (e) { }
                     }
                 } catch (e) { /* ignore */ }
+                // Show/hide site ads when popup toggles `ads`
+                try {
+                    if (newVal && newVal.ads !== undefined) {
+                        try { Altcointalks.toggleSiteAds(newVal.ads); } catch (e) {
+                            // fallback: apply/remove ad-blocking style
+                            try { applyAdToggle(newVal.ads !== 'on'); } catch (e2) { }
+                        }
+                    }
+                } catch (e) { /* ignore */ }
             } catch (e) { /* ignore */ }
         }
     } catch (e) { /* ignore */ }
@@ -1758,3 +1963,103 @@ chrome.storage.onChanged.addListener((changes, area) => {
         doInject();
     }
 })();
+
+// Simple ad-toggle helper: inject/remove a lightweight style that hides common ad containers
+function applyAdToggle(hideAds) {
+    try {
+        const STYLE_ID = 'altcoinstalks-ad-blocker-style';
+        // Restore: unhide previously hidden nodes and remove style
+        if (!hideAds) {
+            try {
+                document.querySelectorAll('[data-altcoinstalks-hidden="1"]').forEach(el => {
+                    try {
+                        const prev = el.getAttribute('data-altcoinstalks-prev-display');
+                        if (prev !== null && prev !== undefined) el.style.display = prev;
+                        else el.style.display = '';
+                        el.removeAttribute('data-altcoinstalks-prev-display');
+                        el.removeAttribute('data-altcoinstalks-hidden');
+                    } catch (e) { }
+                });
+            } catch (e) { }
+            const existing = document.getElementById(STYLE_ID);
+            if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+            return;
+        }
+
+        // Hide path: find likely ad containers but avoid hiding those that contain whitelisted images
+        const containerSelectors = [
+            '.adsbygoogle', '.ad', '.ads', '.advert', '.advertise', '.advertisement', '.adbox', '.ad-container', '.ad-slot', '.adunit', '.ad-wrapper', '[id^="ad-"]', '[id^="ad_"]', '[id*="-ad-"]'
+        ];
+
+        const whitelistImgSelectors = [
+            'img[src*="i.imgur.com"]', 'img[src*="imgur.com"]'
+        ];
+
+        // First, hide any <center> blocks that contain known ad link patterns (site-specific selectors)
+        try {
+            const centerAdHosts = ['reumix.xyz', 'mixero.io'];
+            document.querySelectorAll('center').forEach(center => {
+                try {
+                    const links = Array.from(center.querySelectorAll('a'));
+                    const adLink = links.find(a => {
+                        try {
+                            const href = a.getAttribute && a.getAttribute('href') ? a.getAttribute('href') : (a.href || '');
+                            if (!href) return false;
+                            return centerAdHosts.some(h => href.indexOf(h) !== -1);
+                        } catch (e) { return false; }
+                    });
+                    if (adLink) {
+                        if (center.getAttribute && center.getAttribute('data-altcoinstalks-hidden') !== '1') {
+                            const prev = center.style && center.style.display ? center.style.display : window.getComputedStyle(center).display || '';
+                            try { center.setAttribute('data-altcoinstalks-prev-display', prev); } catch (e) { }
+                            try { center.setAttribute('data-altcoinstalks-hidden', '1'); } catch (e) { }
+                            try { center.style.display = 'none'; } catch (e) { }
+                        }
+                    }
+                } catch (e) { }
+            });
+        } catch (e) { }
+
+        // Then hide matching containers unless they contain a whitelisted image
+        try {
+            const nodes = document.querySelectorAll(containerSelectors.join(','));
+            nodes.forEach(node => {
+                try {
+                    // skip if node already hidden by us
+                    if (node.getAttribute && node.getAttribute('data-altcoinstalks-hidden') === '1') return;
+                    let hasWhitelisted = false;
+                    for (const sel of whitelistImgSelectors) {
+                        try { if (node.querySelector(sel)) { hasWhitelisted = true; break; } } catch (e) { }
+                    }
+                    if (hasWhitelisted) return; // do not hide
+                    const prev = node.style && node.style.display ? node.style.display : window.getComputedStyle(node).display || '';
+                    try { node.setAttribute('data-altcoinstalks-prev-display', prev); } catch (e) { }
+                    try { node.setAttribute('data-altcoinstalks-hidden', '1'); } catch (e) { }
+                    try { node.style.display = 'none'; } catch (e) { }
+                } catch (e) { }
+            });
+        } catch (e) { }
+
+        // Also hide clearly ad-related iframes via style element
+        try {
+            if (!document.getElementById(STYLE_ID)) {
+                const s = document.createElement('style');
+                s.id = STYLE_ID;
+                s.textContent = 'iframe[src*="ads"]{display:none !important;}';
+                (document.head || document.documentElement).appendChild(s);
+            }
+        } catch (e) { }
+    } catch (e) { /* ignore errors */ }
+}
+
+// Apply initial ads setting on load
+try {
+    chrome.storage.local.get('altcoinstalks', (res) => {
+        try {
+            const s = res && res.altcoinstalks ? res.altcoinstalks : {};
+            // default: ads ON (do not hide). If key exists and is 'off', hide.
+            const shouldHide = s.ads === 'off' || s.ads === false;
+            applyAdToggle(!!shouldHide);
+        } catch (e) { }
+    });
+} catch (e) { }
