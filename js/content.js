@@ -17,6 +17,26 @@
         try { if (document && document.documentElement) document.documentElement.style.visibility = ''; } catch (e) { /* ignore */ }
     }
 })();
+// Apply stored shoutbox preference (persisted by popup) on script load
+try {
+    chrome.storage.local.get('altcoinstalks', (data) => {
+        try {
+            const bt = data && data.altcoinstalks ? data.altcoinstalks : {};
+            if (bt && typeof bt.shoutbox !== 'undefined') {
+                const el = document.getElementById('shoutbox') || document.querySelector('.shoutbox');
+                if (el) {
+                    if (bt.shoutbox === 'off' || bt.shoutbox === 'hide') {
+                        el.style.display = 'none';
+                        el.setAttribute('data-altcoinstalks-hidden-shoutbox', '1');
+                    } else {
+                        el.style.display = '';
+                        el.removeAttribute('data-altcoinstalks-hidden-shoutbox');
+                    }
+                }
+            }
+        } catch (e) { /* ignore */ }
+    });
+} catch (e) { /* ignore */ }
 
 // Small helper: fetch with timeout to avoid hanging requests
 function fetchWithTimeout(resource, options = {}, timeout = 10000) {
@@ -163,18 +183,7 @@ function fetchWithTimeout(resource, options = {}, timeout = 10000) {
                     event.preventDefault();
                     event.stopPropagation();
                 }
-                try {
-                    // set without callback to avoid running code inside storage callback (context may be invalidated)
-                    // also disable emoji toolbar when Quill is enabled
-                    chrome.storage.local.get('altcoinstalks', function (res) {
-                        const s = res && res.altcoinstalks ? res.altcoinstalks : {};
-                        s.quillEnabled = true;
-                        s.enableEmojiToolbar = false;
-                        try { chrome.storage.local.set({ altcoinstalks: s }); } catch (e) { /* ignore */ }
-                    });
-                } catch (e) {
-                    // ignore storage errors
-                }
+                // Do NOT persist the enabled state across pages — enable editor only for this page load.
                 // call init immediately (with retries) so UI responds even if storage callback won't run
                 (function callInit(retries) {
                     try {
@@ -192,37 +201,15 @@ function fetchWithTimeout(resource, options = {}, timeout = 10000) {
                     event.preventDefault();
                     event.stopPropagation();
                 }
-                try {
-                    // re-enable emoji toolbar when Quill is disabled
-                    chrome.storage.local.get('altcoinstalks', function (res) {
-                        const s = res && res.altcoinstalks ? res.altcoinstalks : {};
-                        s.quillEnabled = false;
-                        s.enableEmojiToolbar = true;
-                        try { chrome.storage.local.set({ altcoinstalks: s }); } catch (e) { /* ignore */ }
-                    });
-                } catch (e) { }
+                // Do NOT persist the disabled state; just destroy the editor for this page.
                 try { if (window.destroyQuillEditor) window.destroyQuillEditor(); } catch (e) { }
                 updateButtons(false);
                 // show emoji toolbars by triggering a storage change; also ensure any removed toolbars are reattached by toolbar script
                 try { document.querySelectorAll('.altcoinstalks-emoji-toolbar').forEach(el => el.remove()); } catch (e) { }
             });
 
-            // initialize state from storage
-            chrome.storage.local.get('quillEnabled', function (res) {
-                const enabled = !!(res && res.quillEnabled);
-                updateButtons(enabled);
-                if (enabled) {
-                    // If quill assets are not yet injected, retry until available
-                    (function callInit(retries) {
-                        try {
-                            if (window.initQuillEditor) return void window.initQuillEditor();
-                        } catch (e) { }
-                        if (retries > 0) setTimeout(function () { callInit(retries - 1); }, 200);
-                    })(10);
-                } else {
-                    try { if (window.destroyQuillEditor) window.destroyQuillEditor(); } catch (e) { }
-                }
-            });
+            // Default: editor disabled on page load (do not auto-enable from storage)
+            updateButtons(false);
         } catch (err) {
             console.warn('quillToggleUI error', err);
         }
@@ -1403,320 +1390,7 @@ const Altcointalks = {
             console.error('format_counters error', e);
         }
     },
-    // Quick Quote: replaced with updated implementation from attachment
-    initQuickQuote: function () {
-        (function () {
-            'use strict';
 
-            if (window.__altcoinstalks_quick_quote_injected) return;
-            window.__altcoinstalks_quick_quote_injected = true;
-
-            const btn = document.createElement('button');
-            btn.textContent = '❝ Copy Quote';
-            btn.style.position = 'fixed';
-            btn.style.display = 'none';
-            btn.style.zIndex = '9999';
-            btn.style.padding = '5px 10px';
-            btn.style.backgroundColor = '#e7eaef';
-            btn.style.border = '1px solid #000';
-            btn.style.borderRadius = '3px';
-            btn.style.cursor = 'pointer';
-            btn.style.fontSize = '11px';
-            btn.style.fontWeight = 'bold';
-            btn.style.boxShadow = '2px 2px 5px rgba(0,0,0,0.2)';
-            document.body.appendChild(btn);
-
-            function hideButton() { btn.style.display = 'none'; }
-
-            function showButtonNearRange(range) {
-                if (!range) return hideButton();
-                const rects = range.getClientRects();
-                const r = rects && rects.length ? rects[0] : range.getBoundingClientRect();
-                if (!r || (r.width === 0 && r.height === 0)) return hideButton();
-
-                // Make it visible first so we can measure its size
-                btn.style.display = 'block';
-                btn.style.visibility = 'hidden';
-
-                // position relative to viewport (fixed)
-                let top = Math.round(r.bottom + 5);
-                let left = Math.round(r.left);
-
-                // measure button and clamp within viewport
-                const btnRect = btn.getBoundingClientRect();
-                const btnH = btnRect.height || 28;
-                const btnW = btnRect.width || 120;
-
-                if (top + btnH > window.innerHeight - 5) {
-                    top = Math.round(r.top - btnH - 5);
-                }
-                if (left + btnW > window.innerWidth - 5) {
-                    left = Math.max(5, window.innerWidth - btnW - 5);
-                }
-                if (left < 5) left = 5;
-                if (top < 5) top = 5;
-
-                btn.style.top = `${top}px`;
-                btn.style.left = `${left}px`;
-                btn.style.visibility = 'visible';
-            }
-
-            // show button on mouseup (mouse selection) and on selectionchange (keyboard selection)
-            document.addEventListener('mouseup', function () {
-                const selection = window.getSelection();
-                const selectedText = selection.toString().trim();
-                if (selectedText.length < 1) { hideButton(); return; }
-                let node = selection.anchorNode;
-                if (node && node.nodeType === 3) node = node.parentNode;
-                if (!node) { hideButton(); return; }
-                const postDiv = node.closest('div.post');
-                if (!postDiv) { hideButton(); return; }
-                try {
-                    const range = selection.getRangeAt(0);
-                    showButtonNearRange(range);
-                    btn.onclick = function () { processQuote(postDiv, selectedText); };
-                } catch (e) { hideButton(); }
-            });
-
-            document.addEventListener('selectionchange', function () {
-                try {
-                    const selection = window.getSelection();
-                    if (!selection || selection.isCollapsed) { hideButton(); return; }
-                    const selectedText = selection.toString().trim();
-                    if (selectedText.length < 1) { hideButton(); return; }
-                    let node = selection.anchorNode;
-                    if (node && node.nodeType === 3) node = node.parentNode;
-                    if (!node) { hideButton(); return; }
-                    const postDiv = node.closest('div.post');
-                    if (!postDiv) { hideButton(); return; }
-                    const range = selection.getRangeAt(0);
-                    showButtonNearRange(range);
-                    btn.onclick = function () { processQuote(postDiv, selectedText); };
-                } catch (e) { /* ignore */ }
-            });
-
-            document.addEventListener('mousedown', function (e) { if (!btn.contains(e.target)) hideButton(); });
-
-            function safeEncode(str) { return encodeURIComponent(str).replace(/'/g, '%27'); }
-
-            function generateTextFragment(text) {
-                const cleanText = text.replace(/\s+/g, ' ');
-                const words = cleanText.split(' ');
-                if (words.length <= 8) return safeEncode(cleanText);
-                const textStart = words.slice(0, 4).join(' ');
-                const textEnd = words.slice(-4).join(' ');
-                return `${safeEncode(textStart)},${safeEncode(textEnd)}`;
-            }
-
-            function getFormattedDateString() {
-                const date = new Date();
-                const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
-            }
-
-            function fallbackCopy(text) {
-                try {
-                    const ta = document.createElement('textarea');
-                    ta.value = text;
-                    // make tiny and off-screen but focusable
-                    ta.style.position = 'fixed'; ta.style.left = '-9999px'; ta.style.width = '1px'; ta.style.height = '1px'; ta.style.opacity = '0';
-                    document.body.appendChild(ta);
-                    ta.focus();
-                    ta.select();
-                    const ok = document.execCommand && document.execCommand('copy');
-                    try { ta.remove(); } catch (e) { }
-                    return !!ok;
-                } catch (e) {
-                    try { console.warn('fallbackCopy error', e); } catch (ee) { }
-                    return false;
-                }
-            }
-
-            async function writeClipboard(text) {
-                // Try fast clipboard API first (requires secure context and user gesture)
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    try {
-                        await navigator.clipboard.writeText(text);
-                        return true;
-                    } catch (e) {
-                        try { console.warn('navigator.clipboard.writeText failed', e); } catch (ee) { }
-                    }
-                }
-
-                // As a last resort, attempt the legacy execCommand method with focus
-                return fallbackCopy(text);
-            }
-
-            function processQuote(postDiv, selectedText) {
-                try {
-                    // Try to locate the td containing the post content (Bitcointalk-style layout)
-                    let contentTd = postDiv.closest('td.td_headerandpost') || postDiv.closest('td.windowbg') || postDiv.closest('td');
-
-                    // Prepare common variables early so header parsing can set them
-                    let authorName = 'Unknown';
-                    let permalink = '';
-                    let rawDate = '';
-
-                    // If selection is inside an existing quoted header (preview/inserted quote),
-                    // prefer parsing that header since it already contains author + date text.
-                    try {
-                        let walker = postDiv;
-                        let foundQuoteAnchor = null;
-                        while (walker) {
-                            try {
-                                if (walker.querySelector) {
-                                    foundQuoteAnchor = walker.querySelector('div.quoteheader a') || walker.querySelector('div.topslice_quote a') || walker.querySelector('a.bbc_link') || walker.querySelector('a[href*="#msg"]');
-                                }
-                            } catch (e) { foundQuoteAnchor = null; }
-                            if (foundQuoteAnchor) break;
-                            walker = walker.parentElement;
-                        }
-                        if (foundQuoteAnchor) {
-                            // Try text inside the anchor first
-                            try {
-                                const txt = (foundQuoteAnchor.textContent || '').trim();
-                                let m = txt.match(/Quote\s*from\s*:?\s*(.*?)\s+on\s+([\s\S]+)/i);
-                                if (m && m[1] && !/Unknown/i.test(m[1])) authorName = m[1].trim();
-                                if (m && m[2] && !/Unknown Date/i.test(m[2])) rawDate = m[2].trim();
-                            } catch (e) { }
-
-                            // If anchor text is unhelpful (e.g. "Unknown on Unknown Date"), scan parent/ancestors
-                            if ((!authorName || /Unknown/i.test(authorName)) || (!rawDate || /Unknown Date/i.test(rawDate))) {
-                                try {
-                                    let p = foundQuoteAnchor.parentElement;
-                                    let scanned = '';
-                                    // gather text from parent and a few ancestor levels to find the header string
-                                    for (let i = 0; i < 4 && p; i++, p = p.parentElement) {
-                                        if (p && p.textContent) scanned = (p.textContent || '') + '\n' + scanned;
-                                    }
-                                    if (scanned) {
-                                        const mm = scanned.match(/Quote\s*from\s*:?\s*(.*?)\s+on\s+([\s\S]+)/i);
-                                        if (mm && mm[1] && !/Unknown/i.test(mm[1])) authorName = mm[1].trim();
-                                        if (mm && mm[2] && !/Unknown Date/i.test(mm[2])) rawDate = mm[2].trim();
-                                    }
-                                } catch (e) { }
-                            }
-
-                            try { if (!permalink && foundQuoteAnchor.href) permalink = foundQuoteAnchor.href; } catch (e) { }
-                        }
-                    } catch (e) { }
-                    try {
-                        // Primary: previous sibling td (poster info)
-                        if (contentTd && contentTd.previousElementSibling) {
-                            const authorTd = contentTd.previousElementSibling;
-                            const aElem = authorTd.querySelector('b > a') || authorTd.querySelector('a');
-                            if (aElem && aElem.textContent) authorName = aElem.textContent.trim();
-                        }
-                        // Fallbacks: search nearby within the postDiv or row
-                        if (authorName === 'Unknown') {
-                            const tr = contentTd ? contentTd.closest('tr') : postDiv.closest('tr');
-                            if (tr) {
-                                const tryEl = tr.querySelector('td.poster_info b > a, td.poster_info a, .poster_info b > a, .username a, .poster a');
-                                if (tryEl && tryEl.textContent) authorName = tryEl.textContent.trim();
-                            }
-                        }
-                        // Last resort: any bold link inside ancestors
-                        if (authorName === 'Unknown') {
-                            const anyA = postDiv.querySelector('b > a') || postDiv.querySelector('a[rel="author"]') || postDiv.querySelector('a');
-                            if (anyA && anyA.textContent) authorName = anyA.textContent.trim();
-                        }
-                        // Additional fallback: search the document for common poster-info patterns near the post id
-                        if (authorName === 'Unknown') {
-                            try {
-                                const id = postDiv && postDiv.id ? postDiv.id : null;
-                                if (id) {
-                                    const byId = document.querySelector(`#${id}`);
-                                    if (byId) {
-                                        // look for preceding header row in same container
-                                        const maybeRow = byId.closest('tr') || byId.closest('div.windowbg') || byId.closest('div.content');
-                                        if (maybeRow) {
-                                            const found = maybeRow.querySelector('td.poster_info a, .poster_info a, .username a, .poster a, a[rel="author"]');
-                                            if (found && found.textContent) authorName = found.textContent.trim();
-                                        }
-                                    }
-                                }
-                            } catch (e) { }
-                        }
-                    } catch (e) { /* ignore author lookup errors */ }
-
-                    // Permalink / subject
-                    try {
-                        const subjectDiv = contentTd ? contentTd.querySelector('div.subject') : (postDiv.querySelector('div.subject') || null);
-                        if (subjectDiv) {
-                            const linkElem = subjectDiv.querySelector('a'); if (linkElem) permalink = linkElem.href;
-                        }
-                        if (!permalink && contentTd) {
-                            const anchorLink = contentTd.querySelector('a[href*="#msg"]'); if (anchorLink) permalink = anchorLink.href;
-                        }
-                        if (!permalink) {
-                            const anyAnchor = postDiv.querySelector('a[href*="#msg"]') || document.querySelector('a[href*="#msg"]');
-                            if (anyAnchor) permalink = anyAnchor.href;
-                        }
-                        if (permalink) {
-                            const parts = permalink.split('#'); let cleanBase = parts[0].split(';')[0]; if (parts[1]) permalink = cleanBase + '#' + parts[1];
-                        }
-                    } catch (e) { }
-
-                    // Date: try smalltext near subject, then any '.smalltext', then fallback to time element
-                    try {
-                        const subjectDiv = contentTd ? contentTd.querySelector('div.subject') : (postDiv.querySelector('div.subject') || null);
-                        if (subjectDiv && subjectDiv.parentElement) {
-                            const smallTextDiv = subjectDiv.parentElement.querySelector('.smalltext'); if (smallTextDiv) rawDate = smallTextDiv.textContent.trim();
-                        }
-                        if (!rawDate) {
-                            const st = postDiv.querySelector('.smalltext') || postDiv.querySelector('time');
-                            if (st) rawDate = (st.textContent || st.getAttribute('datetime') || '').trim();
-                        }
-                        // extra: scan nearby container for date-like text (month names / year)
-                        if (!rawDate) {
-                            try {
-                                const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December',
-                                    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Sept', 'Oct', 'Nov', 'Dec'];
-                                const container = contentTd || postDiv;
-                                const textCandidates = container ? Array.from(container.querySelectorAll('*')).map(n => n.textContent || '') : [];
-                                for (let t of textCandidates) {
-                                    if (!t) continue;
-                                    for (let m of months) {
-                                        if (t.indexOf(m) !== -1 && /\d{4}/.test(t)) { rawDate = t.trim(); break; }
-                                    }
-                                    if (rawDate) break;
-                                }
-                            } catch (e) { }
-                        }
-                    } catch (e) { }
-                    try { if (rawDate && rawDate.indexOf('Today') === 0) rawDate = rawDate.replace('Today', getFormattedDateString()).replace(' at ', ', '); } catch (e) { }
-
-                    const fragment = generateTextFragment(selectedText);
-                    const dateStr = rawDate || 'Unknown Date';
-                    const authorStr = authorName || 'Unknown Author';
-
-                    const finalUrl = `${permalink}#:~:text=${fragment}`;
-                    const quoteHeader = `[url=${finalUrl}]${authorStr} on ${dateStr}[/url]`;
-                    const bbcode = `[quote="${quoteHeader}"]\n${selectedText}\n[/quote]`;
-
-                    writeClipboard(bbcode).then(success => {
-                        const originalText = btn.textContent;
-                        if (success) {
-                            btn.textContent = 'Copied!'; btn.style.backgroundColor = '#dff0d8'; btn.style.color = '#3c763d';
-                            setTimeout(() => { btn.textContent = originalText; btn.style.backgroundColor = '#e7eaef'; btn.style.color = '#000'; hideButton(); }, 1000);
-                        } else {
-                            console.warn('processQuote: copy failed for bbcode', bbcode.slice(0, 120));
-                            btn.textContent = 'Error'; btn.style.backgroundColor = '#f2dede'; setTimeout(hideButton, 1000);
-                        }
-                    }).catch(e => {
-                        console.error('processQuote: writeClipboard threw', e);
-                        btn.textContent = 'Error'; btn.style.backgroundColor = '#f2dede'; setTimeout(hideButton, 1000);
-                    });
-                } catch (err) {
-                    console.error('Quote Error:', err, { selectedText: selectedText, postDiv: postDiv });
-                    btn.textContent = 'Error'; btn.style.backgroundColor = '#f2dede'; setTimeout(hideButton, 1000);
-                }
-            }
-
-        })();
-    },
-
-    // end of Altcointalks object
 };
 
 // Listener from popup.js
@@ -1732,6 +1406,20 @@ chrome.runtime.onMessage.addListener(
                 if (document && document.documentElement) {
                     const clsList = Array.from(document.documentElement.classList).filter(c => c.indexOf('altcoinstalks-theme-') === 0);
                     clsList.forEach(c => document.documentElement.classList.remove(c));
+                }
+            } catch (e) { /* ignore */ }
+        } else if (message && message.key === 'shoutbox') {
+            try {
+                const val = message.value;
+                const el = document.getElementById('shoutbox') || document.querySelector('.shoutbox');
+                if (el) {
+                    if (val === 'off' || val === 'hide') {
+                        el.style.display = 'none';
+                        el.setAttribute('data-altcoinstalks-hidden-shoutbox', '1');
+                    } else {
+                        el.style.display = '';
+                        el.removeAttribute('data-altcoinstalks-hidden-shoutbox');
+                    }
                 }
             } catch (e) { /* ignore */ }
         } else if (message && message.key) {
@@ -1782,14 +1470,6 @@ chrome.runtime.onMessage.addListener(
 
                 if (Altcointalks.isLoggedIn()) {
                     // merit-related feature removed
-                }
-
-                try {
-                    if (typeof Altcointalks.initQuickQuote === 'function') {
-                        Altcointalks.initQuickQuote();
-                    }
-                } catch (e) {
-                    console.error('initQuickQuote error', e);
                 }
 
                 const bt = storage && storage.altcoinstalks ? storage.altcoinstalks : {};
@@ -1945,7 +1625,9 @@ chrome.storage.onChanged.addListener((changes, area) => {
                     s2.src = initUrl;
                     s2.async = false;
                     s2.onload = function () {
-                        try { if (window.initQuillEditor) window.initQuillEditor(); } catch (e) { }
+                        // Do NOT auto-initialize the editor on load. Keep assets available
+                        // and let the user enable the editor per-page via the toggle UI.
+                        try { window.__altcoinstalks_quill_assets_ready = true; } catch (e) { }
                     };
                     (document.documentElement || document.head || document.body).appendChild(s2);
                 } catch (e) { console.warn('quill init inject failed', e); }
@@ -1988,7 +1670,8 @@ function applyAdToggle(hideAds) {
 
         // Hide path: find likely ad containers but avoid hiding those that contain whitelisted images
         const containerSelectors = [
-            '.adsbygoogle', '.ad', '.ads', '.advert', '.advertise', '.advertisement', '.adbox', '.ad-container', '.ad-slot', '.adunit', '.ad-wrapper', '[id^="ad-"]', '[id^="ad_"]', '[id*="-ad-"]'
+            '.adsbygoogle', '.ad', '.ads', '.advert', '.advertise', '.advertisement', '.adbox', '.ad-container', '.ad-slot', '.adunit', '.ad-wrapper', '[id^="ad-"]', '[id^="ad_"]', '[id*="-ad-"]',
+            '.inner.__web-inspector-hide-shortcut__', '.__web-inspector-hide-shortcut__'
         ];
 
         const whitelistImgSelectors = [
@@ -2036,6 +1719,74 @@ function applyAdToggle(hideAds) {
                     try { node.setAttribute('data-altcoinstalks-prev-display', prev); } catch (e) { }
                     try { node.setAttribute('data-altcoinstalks-hidden', '1'); } catch (e) { }
                     try { node.style.display = 'none'; } catch (e) { }
+                } catch (e) { }
+            });
+        } catch (e) { }
+
+        // Additionally, hide forum post ad blocks that explicitly label themselves as ads
+        try {
+            document.querySelectorAll('div.inner[id^="msg_"]').forEach(node => {
+                try {
+                    if (node.getAttribute && node.getAttribute('data-altcoinstalks-hidden') === '1') return;
+                    const text = (node.textContent || '').toLowerCase();
+                    const html = (node.innerHTML || '').toLowerCase();
+                    if (text.indexOf('this is an ad') !== -1 || html.indexOf('advertise here') !== -1 || html.indexOf('advertised sites') !== -1 || html.indexOf('genesismix.cx') !== -1) {
+                        const prev = node.style && node.style.display ? node.style.display : window.getComputedStyle(node).display || '';
+                        try { node.setAttribute('data-altcoinstalks-prev-display', prev); } catch (e) { }
+                        try { node.setAttribute('data-altcoinstalks-hidden', '1'); } catch (e) { }
+                        try { node.style.display = 'none'; } catch (e) { }
+                    }
+                } catch (e) { }
+            });
+        } catch (e) { }
+
+        // Also: detect <small> ad notices or ad links and hide their post containers
+        try {
+            // Hide based on small text markers
+            document.querySelectorAll('small').forEach(sm => {
+                try {
+                    const txt = (sm.textContent || '').toLowerCase();
+                    if (!txt) return;
+                    if (txt.indexOf('this is an ad') === -1 && txt.indexOf('advertise here') === -1 && txt.indexOf('advertised sites') === -1 && txt.indexOf('this is an ad.') === -1) return;
+                    // climb up to find a sensible container to hide (limit depth)
+                    let anc = sm;
+                    for (let i = 0; i < 6; i++) {
+                        if (!anc) break;
+                        if (anc.matches && (anc.matches('div.inner') || anc.matches('div.post') || anc.matches('[id^="msg_"]') || anc.classList && anc.classList.contains('postarea'))) {
+                            if (anc.getAttribute && anc.getAttribute('data-altcoinstalks-hidden') === '1') break;
+                            const prev = anc.style && anc.style.display ? anc.style.display : window.getComputedStyle(anc).display || '';
+                            try { anc.setAttribute('data-altcoinstalks-prev-display', prev); } catch (e) { }
+                            try { anc.setAttribute('data-altcoinstalks-hidden', '1'); } catch (e) { }
+                            try { anc.style.display = 'none'; } catch (e) { }
+                            break;
+                        }
+                        anc = anc.parentElement;
+                    }
+                } catch (e) { }
+            });
+
+            // Hide based on known ad hrefs inside anchors
+            const adHosts = ['genesismix.cx', 'reumix.xyz', 'mixero.io'];
+            document.querySelectorAll('a[href]').forEach(a => {
+                try {
+                    const href = (a.getAttribute && a.getAttribute('href')) ? a.getAttribute('href') : (a.href || '');
+                    if (!href) return;
+                    const low = href.toLowerCase();
+                    if (!adHosts.some(h => low.indexOf(h) !== -1)) return;
+                    // find closest post container
+                    let anc = a;
+                    for (let i = 0; i < 6; i++) {
+                        if (!anc) break;
+                        if (anc.matches && (anc.matches('div.inner') || anc.matches('div.post') || anc.matches('[id^="msg_"]') || anc.classList && anc.classList.contains('postarea'))) {
+                            if (anc.getAttribute && anc.getAttribute('data-altcoinstalks-hidden') === '1') break;
+                            const prev = anc.style && anc.style.display ? anc.style.display : window.getComputedStyle(anc).display || '';
+                            try { anc.setAttribute('data-altcoinstalks-prev-display', prev); } catch (e) { }
+                            try { anc.setAttribute('data-altcoinstalks-hidden', '1'); } catch (e) { }
+                            try { anc.style.display = 'none'; } catch (e) { }
+                            break;
+                        }
+                        anc = anc.parentElement;
+                    }
                 } catch (e) { }
             });
         } catch (e) { }

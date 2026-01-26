@@ -50,7 +50,7 @@ $(function () {
         // mark theme button active
         $(`button[data-key="${k}"][data-value="${v}"]`).addClass('active');
         // toggle style for on/off type keys
-        if (['signature', 'avatar', 'price', 'pins', 'direction', 'ads'].includes(k)) {
+        if (['signature', 'avatar', 'price', 'pins', 'direction', 'ads', 'shoutbox'].includes(k)) {
           setToggleButtonVisual(k, v);
         }
       });
@@ -164,7 +164,7 @@ $(function () {
           }
         });
       }
-    } else if (['signature', 'avatar', 'price', 'pins', 'direction', 'ads'].includes(key)) {
+    } else if (['signature', 'avatar', 'price', 'pins', 'direction', 'ads', 'shoutbox'].includes(key)) {
       // update visual state for toggle groups: mark the clicked value visually
       setToggleButtonVisual(key, value);
     }
