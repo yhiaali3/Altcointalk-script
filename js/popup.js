@@ -54,6 +54,19 @@ $(function () {
           setToggleButtonVisual(k, v);
         }
       });
+      // Quill editor buttons: reflect boolean state (default: disabled)
+      try {
+        const btnEnable = document.getElementById('btn-quill-enable');
+        const btnDisable = document.getElementById('btn-quill-disable');
+        const enabled = (s && typeof s.quillEnabled !== 'undefined') ? !!s.quillEnabled : false;
+        if (btnEnable && btnDisable) {
+          if (enabled) {
+            btnEnable.classList.add('active-on'); btnDisable.classList.remove('active-off');
+          } else {
+            btnEnable.classList.remove('active-on'); btnDisable.classList.add('active-off');
+          }
+        }
+      } catch (e) { }
     }
     // Reset to default theme
     document.getElementById("resetTheme").addEventListener("click", () => {
@@ -185,6 +198,49 @@ $(function () {
       for (const tab of tabs) chrome.tabs.sendMessage(tab.id, { key: 'zoom', value: val });
     });
   });
+  // Editor enable/disable handlers (popup buttons)
+  try {
+    const btnEnable = document.getElementById('btn-quill-enable');
+    const btnDisable = document.getElementById('btn-quill-disable');
+    function setQuillButtonsState(enabled) {
+      try {
+        if (btnEnable && btnDisable) {
+          if (enabled) { btnEnable.classList.add('active-on'); btnDisable.classList.remove('active-off'); }
+          else { btnEnable.classList.remove('active-on'); btnDisable.classList.add('active-off'); }
+        }
+      } catch (e) { }
+    }
+    if (btnEnable) btnEnable.addEventListener('click', () => {
+      try {
+        chrome.storage.local.get('altcoinstalks', (res) => {
+          const s = res && res.altcoinstalks ? res.altcoinstalks : {};
+          s.quillEnabled = true;
+          s.enableEmojiToolbar = false;
+          chrome.storage.local.set({ altcoinstalks: s }, () => {
+            setQuillButtonsState(true);
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+              for (const tab of tabs) try { chrome.tabs.sendMessage(tab.id, { type: 'toggle-quill-editor', enabled: true }); } catch (e) { }
+            });
+          });
+        });
+      } catch (e) { }
+    });
+    if (btnDisable) btnDisable.addEventListener('click', () => {
+      try {
+        chrome.storage.local.get('altcoinstalks', (res) => {
+          const s = res && res.altcoinstalks ? res.altcoinstalks : {};
+          s.quillEnabled = false;
+          s.enableEmojiToolbar = true;
+          chrome.storage.local.set({ altcoinstalks: s }, () => {
+            setQuillButtonsState(false);
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+              for (const tab of tabs) try { chrome.tabs.sendMessage(tab.id, { type: 'toggle-quill-editor', enabled: false }); } catch (e) { }
+            });
+          });
+        });
+      } catch (e) { }
+    });
+  } catch (e) { }
   // Helpers
   function updateRangeBackground(el) {
     if (!el) return;

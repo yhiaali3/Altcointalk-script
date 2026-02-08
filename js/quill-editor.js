@@ -814,28 +814,38 @@
             } catch (inner) { }
           });
         } catch (e) { }
-        // ensure blockquote button wraps selection as a block and leaves a trailing paragraph
+        // Keep blockquote button simple: wrap selection with BBCode [quote]...[/quote]
         try {
           var bqBtn = document.querySelector('.ql-blockquote');
           if (bqBtn) {
             bqBtn.addEventListener('click', function (e) {
               try {
                 e.preventDefault(); e.stopPropagation();
-                var sel = quill.getSelection();
-                if (!sel) return;
-                var start = sel.index || 0;
-                var len = sel.length || 0;
-                try { quill.formatLine(start, len, 'blockquote', true); } catch (f) { try { quill.format('blockquote', true); } catch (g) { } }
-                // Insert two newlines after the selection end to create a free paragraph below the quote
-                setTimeout(function () {
-                  try {
-                    var endIndex = start + len;
-                    try { quill.insertText(endIndex, '\n'); } catch (ie) { /* ignore */ }
-                    try { quill.setSelection(endIndex + 1, 0); quill.focus(); } catch (se) { }
-                    // ensure the new paragraph is not a blockquote (clear format on that line)
-                    try { quill.formatLine(endIndex + 1, 1, 'blockquote', false); } catch (ff) { try { quill.format('blockquote', false); } catch (gg) { } }
-                  } catch (e) { }
-                }, 30);
+                var range = quill.getSelection();
+                if (!range) return;
+                var idx = range.index || 0;
+                // If nothing selected, insert empty quote and place caret inside
+                if (!range.length) {
+                  var empty = '[quote][/quote]\n';
+                  try { quill.insertText(idx, empty, 'user'); } catch (ie) { quill.insertText(idx, empty); }
+                  try { quill.setSelection(idx + 7, 0, 'user'); } catch (se) { try { quill.setSelection(idx + 7, 0); } catch (ee) { } }
+                  quill.focus();
+                  return;
+                }
+                var selectedText = quill.getText(idx, range.length) || '';
+                var wrapped = '[quote]' + selectedText + '[/quote]\n';
+                try { quill.deleteText(idx, range.length, 'user'); } catch (de) { quill.deleteText(idx, range.length); }
+                try { quill.insertText(idx, wrapped, 'user'); } catch (ie2) { quill.insertText(idx, wrapped); }
+                // Ensure inserted BBCode remains literal text and is NOT rendered
+                // as block-level quotes by Quill. Remove common block formats
+                // across the inserted range (blockquote, code-block, list).
+                try {
+                  try { quill.formatLine(idx, wrapped.length, 'blockquote', false); } catch (f1) { }
+                  try { quill.formatLine(idx, wrapped.length, 'code-block', false); } catch (f2) { }
+                  try { quill.formatLine(idx, wrapped.length, 'list', false); } catch (f3) { }
+                } catch (ff) { }
+                try { quill.setSelection(idx + wrapped.length, 0, 'user'); } catch (se2) { try { quill.setSelection(idx + wrapped.length, 0); } catch (ee2) { } }
+                quill.focus();
               } catch (err) { }
             });
           }
@@ -1127,8 +1137,34 @@
                 t += '[code]' + codeText + '[/code]\n';
               } else if (tag === 'blockquote') {
                 try {
-                  var innerQ = (ch.innerText || ch.textContent || walk(ch) || '').replace(/\u00A0/g, ' ').trim();
-                  if (innerQ) t += '[quote]' + innerQ + '[/quote]\n';
+                  // جمع كل المحتوى الداخلي كوحدة واحدة
+                  var innerContent = '';
+
+                  // استخراج النص مع الحفاظ على الفقرات
+                  if (ch.childNodes && ch.childNodes.length > 0) {
+                    var paragraphs = [];
+                    ch.childNodes.forEach(function (child) {
+                      if (child.nodeType === 3 && child.nodeValue.trim()) {
+                        // نص عادي
+                        paragraphs.push(child.nodeValue.trim());
+                      } else if (child.tagName && child.tagName.toLowerCase() === 'p') {
+                        // فقرة
+                        var paraText = walk(child).trim();
+                        if (paraText) paragraphs.push(paraText);
+                      } else if (child.tagName && child.tagName.toLowerCase() === 'br') {
+                        // سطر جديد
+                        paragraphs.push('\n');
+                      }
+                    });
+                    innerContent = paragraphs.join('\n\n').trim();
+                  } else {
+                    // إذا لم يكن هناك أطفال، استخدم النص المباشر
+                    innerContent = (ch.innerText || ch.textContent || '').replace(/\u00A0/g, ' ').trim();
+                  }
+
+                  if (innerContent) {
+                    t += '[quote]\n' + innerContent + '\n[/quote]\n';
+                  }
                 } catch (e) { }
               } else if (tag === 'a') {
                 var href = ch.getAttribute('href') || '';

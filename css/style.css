@@ -122,3 +122,18 @@ a {
     width: 100%;
     cursor: pointer;
 }
+
+/* Ensure text caret cursor over text inputs, textareas and editable areas */
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="url"],
+input[type="tel"],
+input[type="password"],
+textarea,
+[contenteditable],
+[role="textbox"],
+.ql-editor,
+.ql-container {
+    cursor: text !important;
+}

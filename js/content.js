@@ -74,10 +74,23 @@ function fetchWithTimeout(resource, options = {}, timeout = 10000) {
     try {
         if (!window.__alt_pending_quotes) window.__alt_pending_quotes = [];
 
+        if (!window.__alt_recent_quotes) window.__alt_recent_quotes = new Map();
+
         window.addEventListener('alt-quote-text', function (ev) {
             try {
                 var text = ev && ev.detail && ev.detail.text ? ev.detail.text : '';
                 if (!text) return;
+                // dedupe near-duplicate dispatches (some pages may fire twice)
+                try {
+                    var nowq = Date.now();
+                    var keyq = (text.length || 0) + '|' + (text.slice(0, 120) || '');
+                    // purge old
+                    for (var kk of Array.from(window.__alt_recent_quotes.keys())) {
+                        if (nowq - window.__alt_recent_quotes.get(kk) > 5000) window.__alt_recent_quotes.delete(kk);
+                    }
+                    if (window.__alt_recent_quotes.has(keyq)) return; // ignore duplicate
+                    window.__alt_recent_quotes.set(keyq, nowq);
+                } catch (e) { }
                 // If Quill instance available, insert immediately
                 try {
                     var q = window.__bt_quill_instance;
@@ -556,11 +569,27 @@ const Altcointalks = {
     },
     zoomFontSize: function (value, event) {
         if (event === 0) {
+            // Persist zoom and apply using a dedicated stylesheet so other styles
+            // won't override it and it survives refreshes.
+            function applyZoomStyle(n) {
+                try {
+                    var id = 'altcoinstalks-zoom-style';
+                    var css = 'html, body { zoom: ' + n + '% !important; }';
+                    var el = document.getElementById(id);
+                    if (!el) {
+                        el = document.createElement('style');
+                        el.id = id;
+                        el.setAttribute('data-extension', 'altcoinstalks-zoom');
+                        (document.head || document.documentElement).appendChild(el);
+                    }
+                    el.textContent = css;
+                } catch (e) { /* ignore */ }
+            }
+
             if (!isNaN(parseInt(value))) {
                 let newFontSize = parseInt(value);
                 this.setStorage('zoom', newFontSize);
-                document.body.style.zoom = newFontSize + "%";
-                if (document.documentElement) document.documentElement.style.zoom = newFontSize + "%";
+                applyZoomStyle(newFontSize);
             } else {
                 let newFontSize = !isNaN(parseInt(document.body.style.zoom)) ? parseInt(document.body.style.zoom) : 100;
                 if (value === "plus") {
@@ -571,8 +600,7 @@ const Altcointalks = {
                     newFontSize = 100;
                 }
                 this.setStorage('zoom', newFontSize);
-                document.body.style.zoom = newFontSize + "%";
-                if (document.documentElement) document.documentElement.style.zoom = newFontSize + "%";
+                applyZoomStyle(newFontSize);
             }
         } else {
             const applyZoom = (res) => {
@@ -581,8 +609,19 @@ const Altcointalks = {
                     parsed = parseInt(value);
                 }
                 let finalZoom = parsed !== null ? parsed : 100;
-                document.body.style.zoom = finalZoom + "%";
-                if (document.documentElement) document.documentElement.style.zoom = finalZoom + "%";
+                // Apply via stylesheet (see event===0 branch)
+                try {
+                    var id = 'altcoinstalks-zoom-style';
+                    var el = document.getElementById(id);
+                    var css = 'html, body { zoom: ' + finalZoom + '% !important; }';
+                    if (!el) {
+                        el = document.createElement('style');
+                        el.id = id;
+                        el.setAttribute('data-extension', 'altcoinstalks-zoom');
+                        (document.head || document.documentElement).appendChild(el);
+                    }
+                    el.textContent = css;
+                } catch (e) { /* ignore */ }
             };
 
             if (!isNaN(parseInt(value))) {
@@ -1473,6 +1512,29 @@ chrome.runtime.onMessage.addListener(
                 }
 
                 const bt = storage && storage.altcoinstalks ? storage.altcoinstalks : {};
+                // If the user previously disabled the Quill editor, persist that
+                // state on page load: destroy any editor, inject a page style that
+                // forces the text caret cursor over inputs/areas, and ensure the
+                // emoji toolbar is enabled so it appears when editor is disabled.
+                try {
+                    if (bt && bt.quillEnabled === false) {
+                        try { if (typeof window.destroyQuillEditor === 'function') window.destroyQuillEditor(); } catch (e) { }
+                        if (!document.getElementById('altcoinstalks-editor-disabled-style')) {
+                            const st = document.createElement('style');
+                            st.id = 'altcoinstalks-editor-disabled-style';
+                            st.textContent = '\n/* altcoinstalks: force text caret when editor disabled */\ninput[type="text"],\ninput[type="search"],\ninput[type="email"],\ninput[type="url"],\ninput[type="tel"],\ninput[type="password"],\ntextarea,\n[contenteditable],\n[role="textbox"],\n.ql-editor,\n.ql-container { cursor: text !important; }\n';
+                            try { (document.head || document.documentElement).appendChild(st); } catch (e) { document.documentElement.appendChild(st); }
+                        }
+                        try {
+                            // make sure emoji toolbar setting is enabled so toolbar shows
+                            const copy = Object.assign({}, bt);
+                            copy.enableEmojiToolbar = true;
+                            chrome.storage.local.set({ altcoinstalks: copy });
+                        } catch (e) { }
+                    } else {
+                        try { const el = document.getElementById('altcoinstalks-editor-disabled-style'); if (el) el.remove(); } catch (e) { }
+                    }
+                } catch (e) { }
                 const hasDefaultOrCustom = !!(storage && (storage.defaultTheme || storage.customCss));
                 // Apply stored zoom immediately so it's not accidentally overridden
                 // by theme injection or later initialization steps.
