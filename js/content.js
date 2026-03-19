@@ -250,7 +250,8 @@ const coinLabels = {
     dogecoin: 'DOGE',
     monero: 'XMR',
     polkadot: 'DOT',
-    ripple: 'XRP'
+    ripple: 'XRP',
+    zcash: 'ZEC'
 };
 // Binance symbol map (for websockets / REST fallback)
 const binanceMap = {
@@ -261,7 +262,8 @@ const binanceMap = {
     dogecoin: 'DOGEUSDT',
     monero: 'XMRUSDT',
     polkadot: 'DOTUSDT',
-    ripple: 'XRPUSDT'
+    ripple: 'XRPUSDT',
+    zcash: 'ZECUSDT'
 };
 
 // WebSocket management in page context: service workers don't reliably support WebSocket,

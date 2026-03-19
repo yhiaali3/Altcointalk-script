@@ -8,7 +8,8 @@ const binanceMap = {
     dogecoin: 'DOGEUSDT',
     monero: 'XMRUSDT',
     polkadot: 'DOTUSDT',
-    ripple: 'XRPUSDT'
+    ripple: 'XRPUSDT',
+    zcash: 'ZECUSDT'
 };
 
 // Track whether we asked content scripts to open WS for given ids (so we don't spam them)

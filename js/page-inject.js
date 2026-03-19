@@ -127,6 +127,16 @@
             var looksLikePostAction = /action=post/i.test(href) && href.indexOf('#top') !== -1;
             if (!looksLikeQuoteText && !looksLikeOnclick && !looksLikePostAction) return;
 
+            // Only intercept quote clicks when the page already has a reply textarea.
+            // Otherwise allow normal navigation (e.g. opening the reply/quote page).
+            if (!document.querySelector('textarea[name="message"]')) return;
+
+            // Track whether we have successfully captured a quote; if not, fall back to normal navigation.
+            var quoteDispatched = false;
+            var dispatchQuote = function (text) {
+                try { if (dispatchQuoteOnce(text)) quoteDispatched = true; } catch (e) { }
+            };
+
             ev.preventDefault(); ev.stopPropagation();
 
             // Install interceptors and then invoke the page's insertQuoteFast (if available)
@@ -138,7 +148,7 @@
                         if (!quoted) { console.log('[ALT-INJECT] intercepted response but textarea empty'); return; }
                         var decoded = decodeHtmlEntities(quoted);
                         console.log('[ALT-INJECT] intercepted decoded quote length', decoded.length);
-                        dispatchQuoteOnce(decoded);
+                        dispatchQuote(decoded);
                     } catch (e) { console.log('[ALT-INJECT] error handling intercepted response', e); }
                 });
 
@@ -185,7 +195,7 @@
                                                 try {
                                                     var decoded = decodeHtmlEntities(quoted);
                                                     console.log('[ALT-INJECT] captured via getXMLDocument, decoded length', decoded.length);
-                                                    dispatchQuoteOnce(decoded);
+                                                    dispatchQuote(decoded);
                                                 } catch (e) { console.log('[ALT-INJECT] getXMLDocument wrapped callback error', e); }
                                             }
                                         }
@@ -229,7 +239,7 @@
                                     if (quoted) {
                                         var decoded = decodeHtmlEntities(quoted);
                                         console.log('[ALT-INJECT] captured via onDocReceived, decoded length', decoded.length);
-                                        dispatchQuoteOnce(decoded);
+                                        dispatchQuote(decoded);
                                     }
                                 } catch (e) { console.log('[ALT-INJECT] wrapped onDoc parsing error', e); }
                             }
@@ -250,6 +260,11 @@
                     } else {
                         try { el.onclick && el.onclick(); } catch (e) { }
                     }
+
+                    // fallback to normal navigation if we didn't successfully capture a quote
+                    setTimeout(function () {
+                        try { if (!quoteDispatched && href) window.location.href = href; } catch (e) { }
+                    }, 700);
 
                     // restore getXMLDocument after a short delay if we monkey-patched it
                     setTimeout(function () {
@@ -397,6 +412,16 @@
             var looksLikePostAction = /action=post/i.test(href) && href.indexOf('#top') !== -1;
             if (!looksLikeQuoteText && !looksLikeOnclick && !looksLikePostAction) return;
 
+            // Only intercept quote clicks when the page already has a reply textarea.
+            // Otherwise allow normal navigation (e.g. opening the reply/quote page).
+            if (!document.querySelector('textarea[name="message"]')) return;
+
+            // Track whether we have successfully captured a quote; if not, fall back to normal navigation.
+            var quoteDispatched = false;
+            var dispatchQuote = function (text) {
+                try { if (dispatchQuoteOnce(text)) quoteDispatched = true; } catch (e) { }
+            };
+
             ev.preventDefault(); ev.stopPropagation();
 
             // Install interceptors and then invoke the page's insertQuoteFast (if available)
@@ -408,7 +433,7 @@
                         if (!quoted) { console.log('[BT-INJECT] intercepted response but textarea empty'); return; }
                         var decoded = decodeHtmlEntities(quoted);
                         console.log('[BT-INJECT] intercepted decoded quote length', decoded.length);
-                        dispatchQuoteOnce(decoded);
+                        dispatchQuote(decoded);
                     } catch (e) { console.log('[BT-INJECT] error handling intercepted response', e); }
                 });
 
@@ -455,7 +480,7 @@
                                                 try {
                                                     var decoded = decodeHtmlEntities(quoted);
                                                     console.log('[BT-INJECT] captured via getXMLDocument, decoded length', decoded.length);
-                                                    dispatchQuoteOnce(decoded);
+                                                    dispatchQuote(decoded);
                                                 } catch (e) { console.log('[BT-INJECT] getXMLDocument wrapped callback error', e); }
                                             }
                                         }
@@ -499,7 +524,7 @@
                                     if (quoted) {
                                         var decoded = decodeHtmlEntities(quoted);
                                         console.log('[BT-INJECT] captured via onDocReceived, decoded length', decoded.length);
-                                        dispatchQuoteOnce(decoded);
+                                        dispatchQuote(decoded);
                                     }
                                 } catch (e) { console.log('[BT-INJECT] wrapped onDoc parsing error', e); }
                             }
